@@ -1,11 +1,96 @@
 {
   "name": "vscode-plugin-backend-helper",
-  "version": "1.0.0",
+  "displayName": "vscode-plugin-backend-helper",
   "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.67.0"
   },
-  "author": "",
-  "license": "ISC"
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onView:backendhelper"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "backendhelper.compile",
+        "title": "编译",
+        "icon": {
+          "light": "assets/compile.svg",
+          "dark": "assets/compile.svg"
+        }
+      },
+      {
+        "command": "backendhelper.execute",
+        "title": "运行",
+        "icon": {
+          "light": "assets/execute.svg",
+          "dark": "assets/execute.svg"
+        }
+      }
+    ],
+    "viewsWelcome": [
+      {
+        "view": "backendhelper",
+        "contents": "No User Infomation, Please Enter your name\n[Enter Name](command:enterUserName)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "backend",
+          "title": "后端辅助工具",
+          "icon": "assets/dep.svg"
+        }
+      ]
+    },
+    "views": {
+      "backend": [
+        {
+          "id": "backendhelper",
+          "name": "运维页面"
+        }
+      ]
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "backendhelper.compile",
+          "group": "inline"
+        },
+        {
+          "command": "backendhelper.execute",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "yarn run compile && yarn run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.70.0",
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0",
+    "eslint": "^8.20.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "typescript": "^4.7.4",
+    "@vscode/test-electron": "^2.1.5"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "socket.io-client": "^4.5.1"
+  }
 }

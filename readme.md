@@ -1,14 +1,71 @@
-## 说明
-在 `192.168.0.4` 服务器内，部署了一个 node_16 的镜像容器，内部安装了 `code-server` 部署云IDE
+# vscode-plugin-backend-helper README
 
-### code-server
-code-server 是一个开源的 vscode 的部署框架， 运行后会启动一个 web 服务，可以访问网页进入 vscode 的编辑页面，文件存储路径位于 `/home` 下
+This is the README for your extension "vscode-plugin-backend-helper". After writing up a brief description, we recommend including the following sections.
 
-## 插件目标功能
+## Features
 
-1. 一个占据 Activity Bar 的图标
-2. Sidebar 的 Welcome 页面，正体内容。当发现可以加载到 logwire-backend 文件夹时切换为正体内容
-3. Welcome 内拷贝当前 SSH key 按钮
-4. 正体内，编译按钮，运行按钮
-5. 编译后会打开两个页面，分别是配置文件。配置文件会存储在 node 环境内，第二次启动编译后，会优先打开 node 环境内的配置文件，避免重复修改
-6. 运行按钮，与 node 交互，拿到 websocket 返回的日志信息，打印在 panel 面板内
+Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+
+For example if there is an image subfolder under your extension project workspace:
+
+\!\[feature X\]\(images/feature-x.png\)
+
+> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+
+## Requirements
+
+If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+
+## Extension Settings
+
+Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+
+For example:
+
+This extension contributes the following settings:
+
+* `myExtension.enable`: Enable/disable this extension.
+* `myExtension.thing`: Set to `blah` to do something.
+
+## Known Issues
+
+Calling out known issues can help limit users opening duplicate issues against your extension.
+
+## Release Notes
+
+Users appreciate release notes as you update your extension.
+
+### 1.0.0
+
+Initial release of ...
+
+### 1.0.1
+
+Fixed issue #.
+
+### 1.1.0
+
+Added features X, Y, and Z.
+
+---
+
+## Following extension guidelines
+
+Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+
+* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+
+## Working with Markdown
+
+You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+
+* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
+* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
+* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+
+## For more information
+
+* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
+* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+
+**Enjoy!**

@@ -1,0 +1,36 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getUserName = void 0;
+const axios_1 = require("axios");
+const vscode = require("vscode");
+const const_1 = require("../const");
+/**
+ * 提供一个输入框，
+ */
+let username = '';
+function enterUserName() {
+    vscode.window.showInputBox({
+        placeHolder: '请输入使用者名称'
+    }).then(value => {
+        if (value) {
+            username = value;
+            // TODO: 用该名称向 node 发请求，获取该用户信息
+            axios_1.default.get('http://127.0.0.1:3000/init/' + value).then((res) => {
+                const ssh = res.data;
+                if (ssh) {
+                    // 存在 value 说明是新创建的，提示用户拷贝 ssh
+                    vscode.commands.executeCommand(const_1.default.COMMANDS.CONFIRMSSH, ssh);
+                }
+                else {
+                    // 再次触发 backendProvider.refresh
+                    vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
+                }
+            });
+            vscode.commands.executeCommand(const_1.default.COMMANDS.INITWEBSOCKET, username);
+        }
+    });
+}
+exports.default = enterUserName;
+function getUserName() { return username; }
+exports.getUserName = getUserName;
+//# sourceMappingURL=enterUserName.js.map
