@@ -11,6 +11,7 @@ const enterUserName_1 = require("./commands/enterUserName");
 const execute_1 = require("./commands/execute");
 const const_1 = require("./const");
 const websocket_1 = require("./commands/websocket");
+const stop_1 = require("./commands/stop");
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 function activate(context) {
@@ -22,6 +23,8 @@ function activate(context) {
     vscode.commands.registerCommand(const_1.default.COMMANDS.EXECUTE, execute_1.default);
     vscode.commands.registerCommand(const_1.default.COMMANDS.CONFIRMSSH, copySsh_1.default);
     vscode.commands.registerCommand(const_1.default.COMMANDS.INITWEBSOCKET, websocket_1.default);
+    vscode.commands.registerCommand(const_1.default.COMMANDS.STOP, stop_1.default);
+    vscode.commands.executeCommand('setContext', 'backendHelper.status', '');
     // 激活时，链接 websocket 工作
 }
 exports.activate = activate;

@@ -14,19 +14,22 @@ function enterUserName() {
     }).then(value => {
         if (value) {
             username = value;
-            // TODO: 用该名称向 node 发请求，获取该用户信息
-            axios_1.default.get('http://127.0.0.1:3000/init/' + value).then((res) => {
-                const ssh = res.data;
-                if (ssh) {
-                    // 存在 value 说明是新创建的，提示用户拷贝 ssh
-                    vscode.commands.executeCommand(const_1.default.COMMANDS.CONFIRMSSH, ssh);
-                }
-                else {
-                    // 再次触发 backendProvider.refresh
-                    vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
-                }
+            vscode.commands.executeCommand(const_1.default.COMMANDS.INITWEBSOCKET, username).then(() => {
+                // TODO: 用该名称向 node 发请求，获取该用户信息
+                setTimeout(() => {
+                    axios_1.default.get('http://127.0.0.1:3000/init/' + value).then((res) => {
+                        const data = res.data;
+                        if (data) {
+                            // 存在 value 说明是新创建的，提示用户拷贝 ssh
+                            vscode.commands.executeCommand(const_1.default.COMMANDS.CONFIRMSSH, data);
+                        }
+                        else {
+                            // 再次触发 backendProvider.refresh
+                            vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
+                        }
+                    });
+                });
             });
-            vscode.commands.executeCommand(const_1.default.COMMANDS.INITWEBSOCKET, username);
         }
     });
 }

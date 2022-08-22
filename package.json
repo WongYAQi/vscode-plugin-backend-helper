@@ -30,6 +30,30 @@
           "light": "assets/execute.svg",
           "dark": "assets/execute.svg"
         }
+      },
+      {
+        "command": "backendhelper.stop",
+        "title": "停止",
+        "icon": {
+          "light": "assets/stop.svg",
+          "dark": "assets/stop.svg"
+        }
+      },
+      {
+        "command": "backendhelper.loading",
+        "title": "加载中",
+        "icon": {
+          "light": "assets/loading.svg",
+          "dark": "assets/loading.svg"
+        }
+      },
+      {
+        "command": "backend.refresh",
+        "title": "刷新",
+        "icon": {
+          "light": "assets/refresh.svg",
+          "dark": "assets/refresh.svg"
+        }
       }
     ],
     "viewsWelcome": [
@@ -38,17 +62,8 @@
         "contents": "No User Infomation, Please Enter your name\n[Enter Name](command:enterUserName)"
       }
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "backend",
-          "title": "后端辅助工具",
-          "icon": "assets/dep.svg"
-        }
-      ]
-    },
     "views": {
-      "backend": [
+      "explorer": [
         {
           "id": "backendhelper",
           "name": "运维页面"
@@ -56,14 +71,30 @@
       ]
     },
     "menus": {
-      "view/item/context": [
+      "view/title": [
+        {
+          "command": "backend.refresh",
+          "group": "navigation"
+        },
         {
           "command": "backendhelper.compile",
-          "group": "inline"
+          "group": "navigation",
+          "when": "backendHelper.status == 'stopped'"
         },
         {
           "command": "backendhelper.execute",
-          "group": "inline"
+          "group": "navigation",
+          "when": "backendHelper.status == 'stopped'"
+        },
+        {
+          "command": "backendhelper.stop",
+          "group": "navigation",
+          "when": "backendHelper.status == 'running'"
+        },
+        {
+          "command": "backendhelper.loading",
+          "group": "navigation",
+          "when": "backendHelper.status == 'loading'"
         }
       ]
     }

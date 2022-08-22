@@ -8,6 +8,7 @@ import enterUserName from './commands/enterUserName';
 import execute from './commands/execute';
 import _const from './const';
 import websocket from './commands/websocket'
+import stop from './commands/stop';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -20,6 +21,9 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(_const.COMMANDS.EXECUTE, execute)
     vscode.commands.registerCommand(_const.COMMANDS.CONFIRMSSH, copySshKey)
     vscode.commands.registerCommand(_const.COMMANDS.INITWEBSOCKET, websocket)
+    vscode.commands.registerCommand(_const.COMMANDS.STOP, stop)
+
+    vscode.commands.executeCommand('setContext', 'backendHelper.status', '');
 
     // 激活时，链接 websocket 工作
 }

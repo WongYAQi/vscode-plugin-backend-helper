@@ -12,18 +12,21 @@ export default function enterUserName () {
     }).then(value => {
         if (value) {
             username = value
-            // TODO: 用该名称向 node 发请求，获取该用户信息
-            axios.get('http://127.0.0.1:3000/init/' + value).then((res: AxiosResponse<string>) => {
-                const ssh = res.data
-                if (ssh) {
-                    // 存在 value 说明是新创建的，提示用户拷贝 ssh
-                    vscode.commands.executeCommand(_const.COMMANDS.CONFIRMSSH, ssh)
-                } else {
-                    // 再次触发 backendProvider.refresh
-                    vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
-                }
+            vscode.commands.executeCommand(_const.COMMANDS.INITWEBSOCKET, username).then(() => {
+                // TODO: 用该名称向 node 发请求，获取该用户信息
+                setTimeout(() => {
+                    axios.get('http://127.0.0.1:3000/init/' + value).then((res: AxiosResponse<string>) => {
+                        const data = res.data
+                        if (data) {
+                            // 存在 value 说明是新创建的，提示用户拷贝 ssh
+                            vscode.commands.executeCommand(_const.COMMANDS.CONFIRMSSH, data)
+                        } else {
+                            // 再次触发 backendProvider.refresh
+                            vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
+                        }
+                    })
+                })
             })
-            vscode.commands.executeCommand(_const.COMMANDS.INITWEBSOCKET, username)
         }
     })
 }

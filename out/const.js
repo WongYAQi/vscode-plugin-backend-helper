@@ -6,7 +6,8 @@ exports.default = {
         COMPILE: 'backendhelper.compile',
         EXECUTE: 'backendhelper.execute',
         CONFIRMSSH: 'confirm.ssh.copy',
-        INITWEBSOCKET: 'initial.websocket'
+        INITWEBSOCKET: 'initial.websocket',
+        STOP: 'backendhelper.stop'
     },
     VIEW: {
         ID: 'backendhelper'

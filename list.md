@@ -1,5 +1,18 @@
-# 要做的事情
-1. [x] Sidebar 页面，Activity Bar 图标 出现
-2. [ ] Sidebar 页面内部设计，能否拿到页面的 url 呢？根据 url 发送请求，获取这个人是否有执行过，如果没有显示 welcome, 如果有，则显示一个 tree view, 用人的名字作为父节点，子节点分别是 backend, gateway, 然后提供右侧的按钮，`编译` `运行` ，点击编译后向后端发请求，执行，执行完自动显示出来 properties 配置页面，然后需要用户编辑，编辑完点击运行，再次发送请求，执行运行方法
-3. [ ] 怎么把日志打印出来
-4. [ ] 终止方法，如果运行了则右侧的按钮只切换为 `终止`
+插件的 Sidebar 中显示的内容，应该是当前用户的服务运行状态，以及其他信息。用 title 区域表现用户
+
+可以使用自定义的 when 关键字，注册后可以判断
+`vscode.commands.executeCommand('setContext', 'backendHelper.status', 'running' | 'stopped' | 'loading');`  
+三种状态分别代表 `运行中` `已停止` `处理中`  
+处于 `运行中` 时显示 `停止` 按钮
+处于 `stopped` 时显示 `编译` `运行` 按钮  
+处于 `处理中` 时不显示按钮
+
+TreeView 的每一个节点显示纯文本信息，用JSON来举例  
+```json
+[
+    { "label": "用户名: xxxx" },
+    { "label": "Backend 服务: xxxx" },
+    { "label": "Gateway 服务: xxxx" }
+]
+```
+
