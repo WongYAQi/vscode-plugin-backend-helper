@@ -60,7 +60,7 @@ app.get('/status/:name', function (req, res) {
             res.send(undefined);
         }
         else {
-            sendCurrentStatusBySocekt().then((result) => {
+            sendCurrentStatusBySocekt(req.params.name).then((result) => {
                 res.send(result);
             }).catch(err => {
                 res.send(err);
@@ -181,18 +181,20 @@ function getFolderPath(name) {
         ? path.resolve('D:\\git\\vscode-plugin-backend-helper\\node', name)
         : '/root/' + name;
 }
-function sendCurrentStatusBySocekt() {
+function sendCurrentStatusBySocekt(username) {
     return new Promise((resolve, reject) => {
         pm2.connect((err) => {
+            console.log(err);
             if (err) {
                 reject(err);
                 return;
             }
             pm2.list((err, list) => {
+                console.log(list);
                 pm2.disconnect();
                 resolve({
-                    backend: list.find(o => o.name === 'backend')?.pm2_env?.status,
-                    gateway: list.find(o => o.name === 'gateway')?.pm2_env?.status
+                    backend: list.find(o => o.name === username + '_backend')?.pm2_env?.status,
+                    gateway: list.find(o => o.name === username + '_gateway')?.pm2_env?.status
                 });
             });
         });
