@@ -110,8 +110,8 @@ app.post('/compile/:name', function (req, res) {
     child.on('exit', function (code, signal) {
         let assemble = (0, child_process_1.exec)('bash build-release.sh --module="assemble"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') });
         assemble.on('exit', function () {
-            fs.copyFileSync('./application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/application-server.properties');
-            fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/application-gateway.properties');
+            fs.copyFileSync('./application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/config/application-server.properties');
+            fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/config/application-gateway.properties');
             io.to(req.params.name).emit('status', { backend: '', gateway: '' });
             res.send({ code, signal });
         });
