@@ -16,6 +16,7 @@ export class BackendProvider implements vscode.TreeDataProvider<Backend> {
             const username = getUserName()
             if (username) {
                 return axios('http://127.0.0.1:3000/status/' + username).then(res => {
+                    console.log(res)
                     const { backend, gateway } = res.data
                     if (res.data.backend === 'online' && res.data.gateway === 'online') {
                         vscode.commands.executeCommand('setContext', 'backendHelper.status', 'running');

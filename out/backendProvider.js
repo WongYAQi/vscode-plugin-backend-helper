@@ -21,6 +21,7 @@ class BackendProvider {
             const username = (0, enterUserName_1.getUserName)();
             if (username) {
                 return (0, axios_1.default)('http://127.0.0.1:3000/status/' + username).then(res => {
+                    console.log(res);
                     const { backend, gateway } = res.data;
                     if (res.data.backend === 'online' && res.data.gateway === 'online') {
                         vscode.commands.executeCommand('setContext', 'backendHelper.status', 'running');

@@ -60,7 +60,6 @@ app.get('/status/:name', function (req, res) {
             res.send(undefined);
         }
         else {
-            // TODO: 状态需要根据 pm2 框架获取
             sendCurrentStatusBySocekt().then((result) => {
                 res.send(result);
             }).catch(err => {
@@ -121,7 +120,7 @@ app.post('/execute/:name', function (req, res) {
     (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
     (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
     ['backend', 'gateway'].forEach(element => {
-        let child2 = (0, child_process_1.exec)(`pm2 log ${req.params.name}_${element}`);
+        let child2 = (0, child_process_1.exec)(`pm2 log ${req.params.name}_${element} --lines 10000`);
         // let child2 = exec(`pm2 log ${req.params.name}`);
         child2.stdout.on('data', function (data) {
             // 如何拿到当前用户对应的 socket 对象
