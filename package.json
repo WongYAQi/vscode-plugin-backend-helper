@@ -3,7 +3,7 @@
   "displayName": "vscode-plugin-backend-helper",
   "description": "",
   "version": "0.0.1",
-  "publisher": "WongYAQi2",
+  "publisher": "WongYAQi",
   "engines": {
     "vscode": "^1.67.0"
   },
