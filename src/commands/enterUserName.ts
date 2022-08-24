@@ -23,6 +23,8 @@ export default function enterUserName () {
                         } else {
                             // 再次触发 backendProvider.refresh
                             vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
+                            // 直接进入用户文件夹
+                            vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file('/root/' + username + '/logwire-backend'))
                         }
                     })
                 })

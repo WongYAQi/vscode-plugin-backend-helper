@@ -14,17 +14,14 @@ export default function compile(item: Backend) {
     vscode.commands.executeCommand('setContext', 'backendHelper.status', 'loading');
     // 发送请求，后续日志由 websocket 模块负责
     axios.post('http://127.0.0.1:3000/compile/' + username).then((res: AxiosResponse<{ code: any, signal: any }>) => {
-        // 如果成功，则直接打开配置文件
-        if (true) {
-            axios('http://127.0.0.1:3000/getFolerPath/' + username).then(res => {
-                ;['backend', 'gateway'].forEach(target => {
-                    const properties = target === 'backend' ? 'application-server.properties' : 'application-gateway.properties'
-                    const path2 = path.join(res.data, 'logwire-backend', 'build-output', target, 'config', properties)
-                    vscode.window.showTextDocument(vscode.Uri.file(path2))
-                    vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
-                })
+        axios('http://127.0.0.1:3000/getFolerPath/' + username).then(res => {
+            ;['backend', 'gateway'].forEach(target => {
+                const properties = target === 'backend' ? 'application-server.properties' : 'application-gateway.properties'
+                const path2 = path.join(res.data, 'logwire-backend', 'build-output', target, 'config', properties)
+                vscode.window.showTextDocument(vscode.Uri.file(path2))
+                vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
             })
-        }
+        })
     })
     // 删除以前的看板
     let channel = storedChannel.get('execute.gateway') as vscode.OutputChannel

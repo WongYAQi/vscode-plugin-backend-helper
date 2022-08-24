@@ -2,7 +2,7 @@
   "name": "vscode-plugin-backend-helper",
   "displayName": "vscode-plugin-backend-helper",
   "description": "",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "WongYAQi",
   "engines": {
     "vscode": "^1.67.0"
@@ -80,27 +80,28 @@
       "view/title": [
         {
           "command": "backend.refresh",
-          "group": "navigation"
+          "group": "navigation",
+          "when": "view == backendhelper"
         },
         {
           "command": "backendhelper.compile",
           "group": "navigation",
-          "when": "backendHelper.status == 'stopped'"
+          "when": "view == backendhelper && backendHelper.status == 'stopped'"
         },
         {
           "command": "backendhelper.execute",
           "group": "navigation",
-          "when": "backendHelper.status == 'stopped'"
+          "when": "view == backendhelper && backendHelper.status == 'stopped'"
         },
         {
           "command": "backendhelper.stop",
           "group": "navigation",
-          "when": "backendHelper.status == 'running'"
+          "when": "view == backendhelper && backendHelper.status == 'running'"
         },
         {
           "command": "backendhelper.loading",
           "group": "navigation",
-          "when": "backendHelper.status == 'loading'"
+          "when": "view == backendhelper && backendHelper.status == 'loading'"
         }
       ]
     }

@@ -50,9 +50,7 @@ app.get('/gitclone/:name', function (req: any, res: any) {
     const folder = getFolderPath(req.params.name);
     let child = exec('git clone ' + repo, { cwd: folder });
     child.on('exit', () => {
-        fs.copyFileSync('./execute.backend.js', '/root/' + username + '/execute.backend.js');
-        fs.copyFileSync('./execute.gateway.js', '/root/' + username + '/execute.gateway.js');
-        res.send(path.join(folder, 'logwire-backend'));
+       res.send(path.join(folder, 'logwire-backend'));
     });
 });
 
@@ -127,8 +125,8 @@ app.post('/compile/:name', function (req: any, res: any) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req: any, res: any) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
-    exec(`pm2 start execute.backend.js --name ${req.params.name}_backend --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
-    exec(`pm2 start execute.gateway.js --name ${req.params.name}_gateway --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
+    exec(`pm2 start java -- -jar logwire-backend-starter.jar --name ${req.params.name}_backend --no-autorestart`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
+    exec(`pm2 start java -- -jar logwire-gateway-starter.jar --name ${req.params.name}_gateway --no-autorestart`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
     // 执行后，根据 pm2 log xxx 打印日志
     ;['backend', 'gateway'].forEach(element => {
         let child2 = exec(`pm2 log ${req.params.name}_${element}`)
