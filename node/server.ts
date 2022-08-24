@@ -4,7 +4,6 @@ import fs = require('fs');
 import http = require('http');
 import { exec, spawn } from "child_process";
 import { send } from "process";
-import { Socket } from "socket.io";
 const { Server } = require('socket.io');
 const pm2 = require('pm2');
 
@@ -54,8 +53,8 @@ app.get('/gitclone/:name', function (req: any, res: any) {
         res.send('克隆失败');
     });
     child.on('exit', () => {
-        fs.cpSync('./execute.backend.js', './' + username);
-        fs.cpSync('./execute.gateway.js', './' + username);
+        fs.cpSync('./execute.backend.js', '/root/' + username);
+        fs.cpSync('./execute.gateway.js', '/root/' + username);
         res.send(path.join(folder, 'logwire-backend'));
     });
 });
@@ -110,7 +109,7 @@ app.post('/stop/:name', function (req: any, res: any) {
 
 // 编译代码，执行 bash build-release.sh 命令，将输出提交到前台, 以 compile 注册的 socket.io 监听
 app.post('/compile/:name', function (req: any, res: any) {
-    let child = exec('bash build-release.sh --module="logwire"', { cwd: getFolderPath(req.params.name) });
+    let child = exec('bash build-release.sh --module="logwire"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') });
     child.stdout.on('data', function (data) {
         io.to(req.params.name).emit('compile', data);
     });
@@ -126,8 +125,8 @@ app.post('/compile/:name', function (req: any, res: any) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req: any, res: any) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
-    exec(`pm2 start ./${req.params.name}/execute.backend.js --name ${req.params.name}_backend --no-autorestart`)
-    exec(`pm2 start ./${req.params.name}/execute.gateway.js --name ${req.params.name}_gateway --no-autorestart`)
+    exec(`pm2 start ./${req.params.name}/execute.backend.js --name ${req.params.name}_backend --no-autorestart`, { cwd: getFolderPath(req.params.name) })
+    exec(`pm2 start ./${req.params.name}/execute.gateway.js --name ${req.params.name}_gateway --no-autorestart`, { cwd: getFolderPath(req.params.name) })
         // 执行后，根据 pm2 log xxx 打印日志
         ;['backend', 'gateway'].forEach(element => {
             let child2 = exec(`pm2 log ${req.params.name}_${element}`)
@@ -144,11 +143,11 @@ app.post('/execute/:name', function (req: any, res: any) {
 // ====================Websocket 通信=====================
 
 io.on('connection', (socket) => {
-    console.log('socket in connect, ready to join room: ' + socket['username']);
+    console.log('socket in connect, ready to join room:   ' + socket['username']);
     socket.join(socket['username']);
 });
 // 中间件处理用户
-io.use((socket: Socket, next) => {
+io.use((socket, next) => {
     const username = socket.handshake.auth.username;
     if (!username) {
         return next(new Error('invalid username'));
