@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.storedChannel = void 0;
-const socket_io_client_1 = require("socket.io-client");
+const { io } = require('socket.io-client');
 const vscode = require("vscode");
 const const_1 = require("../const");
 exports.storedChannel = new Map();
 function initialWebsocketConnection(username) {
     return new Promise((resolve, reject) => {
-        const socket = (0, socket_io_client_1.io)('http://127.0.0.1:3000', { auth: { username }, secure: true, reconnection: true, rejectUnauthorized: false });
+        const socket = io('http://127.0.0.1:3000', { auth: { username }, secure: true, reconnection: true, rejectUnauthorized: false });
         socket.on('connect', () => {
             resolve();
         });
