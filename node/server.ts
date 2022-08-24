@@ -117,8 +117,14 @@ app.post('/compile/:name', function (req: any, res: any) {
         io.to(req.params.name).emit('compile', data);
     });
     child.on('exit', function (code, signal) {
-        io.to(req.params.name).emit('status', { backend: '', gateway: '' })
-        res.send({ code, signal });
+        let assemble = exec('bash build-release.sh --module="assemble"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') })
+        assemble.stderr.on('data', function (data) {
+            res.send({ msg: '编译以及运行逻辑报错', data });
+        })
+        assemble.on('exit', function () {
+            io.to(req.params.name).emit('status', { backend: '', gateway: '' })
+            res.send({ code, signal });
+        })
     });
 });
 
