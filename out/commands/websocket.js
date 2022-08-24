@@ -18,6 +18,7 @@ function initialWebsocketConnection(username) {
             let channel = exports.storedChannel.get('compile');
             if (!channel) {
                 channel = vscode.window.createOutputChannel('compile');
+                exports.storedChannel.set('compile', channel);
             }
             channel.show();
             channel.append(data + '\n');
@@ -26,6 +27,7 @@ function initialWebsocketConnection(username) {
             let channel = exports.storedChannel.get('execute.backend');
             if (!channel) {
                 channel = vscode.window.createOutputChannel('execute.backend');
+                exports.storedChannel.set('execute.backend', channel);
             }
             channel.show();
             channel.append(data + '\n');
@@ -34,6 +36,7 @@ function initialWebsocketConnection(username) {
             let channel = exports.storedChannel.get('execute.gateway');
             if (!channel) {
                 channel = vscode.window.createOutputChannel('execute.gateway');
+                exports.storedChannel.set('execute.gateway', channel);
             }
             channel.show();
             channel.append(data + '\n');

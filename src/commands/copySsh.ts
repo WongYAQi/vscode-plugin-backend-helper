@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios'
+import path = require('path')
 import * as vscode from 'vscode'
 import _const from '../const'
 import { getUserName } from './enterUserName'
@@ -14,7 +15,7 @@ export default function copySshKey (ssh: string) {
                 vscode.window.showInformationMessage('仓库克隆完毕')
                 // TODO: 应该让 code-server 显示这个仓库中的内容
                 vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
-                vscode.commands.executeCommand('vscode.openFolder', folder)
+                vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(folder))
             })
         }
     })

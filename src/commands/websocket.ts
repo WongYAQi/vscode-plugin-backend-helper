@@ -18,6 +18,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
             let channel = storedChannel.get('compile') as vscode.OutputChannel
             if (!channel) {
                 channel = vscode.window.createOutputChannel('compile')
+                storedChannel.set('compile', channel)
             }
             channel.show()
             channel.append(data + '\n')
@@ -27,6 +28,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
             let channel = storedChannel.get('execute.backend') as vscode.OutputChannel
             if (!channel) {
                 channel = vscode.window.createOutputChannel('execute.backend')
+                storedChannel.set('execute.backend', channel)
             }
             channel.show()
             channel.append(data + '\n')
@@ -35,6 +37,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
             let channel = storedChannel.get('execute.gateway') as vscode.OutputChannel
             if (!channel) {
                 channel = vscode.window.createOutputChannel('execute.gateway')
+                storedChannel.set('execute.gateway', channel)
             }
             channel.show()
             channel.append(data + '\n')
