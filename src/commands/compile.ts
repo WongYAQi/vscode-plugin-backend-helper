@@ -21,6 +21,7 @@ export default function compile(item: Backend) {
                     const properties = target === 'backend' ? 'application-server.properties' : 'application-gateway.properties'
                     const path2 = path.join(res.data, 'logwire-backend', 'build-output', target, 'config', properties)
                     vscode.window.showTextDocument(vscode.Uri.file(path2))
+                    vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
                 })
             })
         }

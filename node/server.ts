@@ -127,8 +127,8 @@ app.post('/compile/:name', function (req: any, res: any) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req: any, res: any) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
-    exec(`pm2 start ${req.params.name}/execute.backend.js --name ${req.params.name}_backend --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
-    exec(`pm2 start ${req.params.name}/execute.gateway.js --name ${req.params.name}_gateway --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
+    exec(`pm2 start execute.backend.js --name ${req.params.name}_backend --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
+    exec(`pm2 start execute.gateway.js --name ${req.params.name}_gateway --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
     // 执行后，根据 pm2 log xxx 打印日志
     ;['backend', 'gateway'].forEach(element => {
         let child2 = exec(`pm2 log ${req.params.name}_${element}`)
