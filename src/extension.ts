@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { BackendProvider } from './backendProvider';
 import compile from './commands/compile';
 import copySshKey from './commands/copySsh';
-import enterUserName from './commands/enterUserName';
+import enterUserName, { setUserName } from './commands/enterUserName';
 import execute from './commands/execute';
 import _const from './const';
 import websocket from './commands/websocket'
@@ -25,11 +25,12 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(_const.COMMANDS.STOP, stop)
 
     vscode.commands.executeCommand('setContext', 'backendHelper.status', '');
-
-    if (window.location.search) {
-        var exec = /folder=\/root\/(.*?)\/logwire-backend/.exec(window.location.search)
+    if (vscode.workspace.workspaceFolders.length) {
+        var exec = /\/root\/(.*?)\/logwire-backend/.exec(vscode.workspace.workspaceFolders[0].uri.path)
+        console.log(exec)
         if (exec) {
             var username = exec[1]
+            setUserName(username)
             axios.get('http://127.0.0.1:3000/init/' + username).then((res: AxiosResponse<string>) => {
                 const data = res.data
                 if (data) {

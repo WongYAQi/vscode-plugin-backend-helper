@@ -13,6 +13,12 @@ export default function compile(item: Backend) {
     const username = getUserName()
     vscode.commands.executeCommand('setContext', 'backendHelper.status', 'loading');
     // 发送请求，后续日志由 websocket 模块负责
+    let channel = storedChannel.get('execute.gateway') as vscode.OutputChannel
+    if (channel) { channel.hide(); channel.dispose();storedChannel.delete('execute.gateway'); }
+    channel = storedChannel.get('execute.backend') as vscode.OutputChannel
+    if (channel) { channel.hide(); channel.dispose();storedChannel.delete('execute.backend'); }
+    channel = storedChannel.get('compile') as vscode.OutputChannel
+    if (channel) { channel.hide(); channel.dispose();storedChannel.delete('execute.compile'); }
     axios.post('http://127.0.0.1:3000/compile/' + username).then((res: AxiosResponse<{ code: any, signal: any }>) => {
         axios('http://127.0.0.1:3000/getFolerPath/' + username).then(res => {
             ;['backend', 'gateway'].forEach(target => {
@@ -24,10 +30,4 @@ export default function compile(item: Backend) {
         })
     })
     // 删除以前的看板
-    let channel = storedChannel.get('execute.gateway') as vscode.OutputChannel
-    if (channel) { channel.hide() }
-    channel = storedChannel.get('execute.backend') as vscode.OutputChannel
-    if (channel) { channel.hide() }
-    channel = storedChannel.get('compile') as vscode.OutputChannel
-    if (channel) { channel.hide() }
 }

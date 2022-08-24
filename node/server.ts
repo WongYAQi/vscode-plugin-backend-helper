@@ -125,8 +125,8 @@ app.post('/compile/:name', function (req: any, res: any) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req: any, res: any) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
-    exec(`pm2 start java -- -jar logwire-backend-starter.jar --name ${req.params.name}_backend --no-autorestart`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
-    exec(`pm2 start java -- -jar logwire-gateway-starter.jar --name ${req.params.name}_gateway --no-autorestart`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
+    exec(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
+    exec(`pm2 start --name ${req.params.name}_gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
     // 执行后，根据 pm2 log xxx 打印日志
     ;['backend', 'gateway'].forEach(element => {
         let child2 = exec(`pm2 log ${req.params.name}_${element}`)

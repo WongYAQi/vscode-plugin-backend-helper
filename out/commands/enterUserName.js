@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserName = void 0;
+exports.setUserName = exports.getUserName = void 0;
 const axios_1 = require("axios");
 const vscode = require("vscode");
 const const_1 = require("../const");
@@ -38,4 +38,6 @@ function enterUserName() {
 exports.default = enterUserName;
 function getUserName() { return username; }
 exports.getUserName = getUserName;
+function setUserName(val) { username = val; }
+exports.setUserName = setUserName;
 //# sourceMappingURL=enterUserName.js.map

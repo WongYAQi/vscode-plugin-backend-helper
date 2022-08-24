@@ -13,6 +13,24 @@ function compile(item) {
     const username = (0, enterUserName_1.getUserName)();
     vscode.commands.executeCommand('setContext', 'backendHelper.status', 'loading');
     // 发送请求，后续日志由 websocket 模块负责
+    let channel = websocket_1.storedChannel.get('execute.gateway');
+    if (channel) {
+        channel.hide();
+        channel.dispose();
+        websocket_1.storedChannel.delete('execute.gateway');
+    }
+    channel = websocket_1.storedChannel.get('execute.backend');
+    if (channel) {
+        channel.hide();
+        channel.dispose();
+        websocket_1.storedChannel.delete('execute.backend');
+    }
+    channel = websocket_1.storedChannel.get('compile');
+    if (channel) {
+        channel.hide();
+        channel.dispose();
+        websocket_1.storedChannel.delete('execute.compile');
+    }
     axios_1.default.post('http://127.0.0.1:3000/compile/' + username).then((res) => {
         (0, axios_1.default)('http://127.0.0.1:3000/getFolerPath/' + username).then(res => {
             ;
@@ -25,18 +43,6 @@ function compile(item) {
         });
     });
     // 删除以前的看板
-    let channel = websocket_1.storedChannel.get('execute.gateway');
-    if (channel) {
-        channel.hide();
-    }
-    channel = websocket_1.storedChannel.get('execute.backend');
-    if (channel) {
-        channel.hide();
-    }
-    channel = websocket_1.storedChannel.get('compile');
-    if (channel) {
-        channel.hide();
-    }
 }
 exports.default = compile;
 //# sourceMappingURL=compile.js.map

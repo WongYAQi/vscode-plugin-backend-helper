@@ -34,3 +34,4 @@ export default function enterUserName () {
 }
 
 export function getUserName () { return username }
+export function setUserName (val) { username = val }
