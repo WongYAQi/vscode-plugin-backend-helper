@@ -15,7 +15,6 @@ export default function initialWebsocketConnection (username: string): Promise<v
         });
 
         socket.on('compile', function (data) {
-            console.log('compile', data)
             let channel = storedChannel.get('compile') as vscode.OutputChannel
             if (!channel) {
                 channel = vscode.window.createOutputChannel('compile')

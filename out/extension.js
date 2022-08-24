@@ -28,20 +28,21 @@ function activate(context) {
     vscode.commands.executeCommand('setContext', 'backendHelper.status', '');
     if (vscode.workspace.workspaceFolders.length) {
         var exec = /\/root\/(.*?)\/logwire-backend/.exec(vscode.workspace.workspaceFolders[0].uri.path);
-        console.log(exec);
         if (exec) {
             var username = exec[1];
             (0, enterUserName_1.setUserName)(username);
-            axios_1.default.get('http://127.0.0.1:3000/init/' + username).then((res) => {
-                const data = res.data;
-                if (data) {
-                    // 存在 value 说明是新创建的，提示用户拷贝 ssh
-                    vscode.commands.executeCommand(const_1.default.COMMANDS.CONFIRMSSH, data);
-                }
-                else {
-                    // 再次触发 backendProvider.refresh
-                    vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
-                }
+            vscode.commands.executeCommand(const_1.default.COMMANDS.INITWEBSOCKET, username).then(() => {
+                axios_1.default.get('http://127.0.0.1:3000/init/' + username).then((res) => {
+                    const data = res.data;
+                    if (data) {
+                        // 存在 value 说明是新创建的，提示用户拷贝 ssh
+                        vscode.commands.executeCommand(const_1.default.COMMANDS.CONFIRMSSH, data);
+                    }
+                    else {
+                        // 再次触发 backendProvider.refresh
+                        vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
+                    }
+                });
             });
         }
     }

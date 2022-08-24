@@ -100,7 +100,6 @@ app.post('/stop/:name', function (req, res) {
 app.post('/compile/:name', function (req, res) {
     let child = (0, child_process_1.exec)('bash build-release.sh --module="logwire"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') });
     child.stdout.on('data', function (data) {
-        console.log('compile test', data);
         io.to(req.params.name).emit('compile', data);
     });
     child.stderr.on('data', function (data) {
