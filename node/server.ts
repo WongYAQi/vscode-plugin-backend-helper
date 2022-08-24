@@ -49,9 +49,6 @@ app.get('/gitclone/:name', function (req: any, res: any) {
     const repo = 'ssh://git@gitlab.logwire.cn:13389/logwire2/logwire-backend.git';
     const folder = getFolderPath(req.params.name);
     let child = exec('git clone ' + repo, { cwd: folder });
-    child.stderr.on('data', function (data) {
-        res.send('克隆失败');
-    });
     child.on('exit', () => {
         fs.copyFileSync('./execute.backend.js', '/root/' + username + '/execute.backend.js');
         fs.copyFileSync('./execute.gateway.js', '/root/' + username + '/execute.gateway.js');
@@ -118,9 +115,6 @@ app.post('/compile/:name', function (req: any, res: any) {
     });
     child.on('exit', function (code, signal) {
         let assemble = exec('bash build-release.sh --module="assemble"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') })
-        assemble.stderr.on('data', function (data) {
-            res.send({ msg: '编译以及运行逻辑报错', data });
-        })
         assemble.on('exit', function () {
             io.to(req.params.name).emit('status', { backend: '', gateway: '' })
             res.send({ code, signal });
