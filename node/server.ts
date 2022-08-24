@@ -116,6 +116,8 @@ app.post('/compile/:name', function (req: any, res: any) {
     child.on('exit', function (code, signal) {
         let assemble = exec('bash build-release.sh --module="assemble"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') })
         assemble.on('exit', function () {
+            fs.copyFileSync('./application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/application-server.properties');
+            fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/application-gateway.properties');
             io.to(req.params.name).emit('status', { backend: '', gateway: '' })
             res.send({ code, signal });
         })
@@ -125,17 +127,17 @@ app.post('/compile/:name', function (req: any, res: any) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req: any, res: any) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
-    exec(`pm2 start ./${req.params.name}/execute.backend.js --name ${req.params.name}_backend --no-autorestart`, { cwd: getFolderPath(req.params.name) })
-    exec(`pm2 start ./${req.params.name}/execute.gateway.js --name ${req.params.name}_gateway --no-autorestart`, { cwd: getFolderPath(req.params.name) })
-        // 执行后，根据 pm2 log xxx 打印日志
-        ;['backend', 'gateway'].forEach(element => {
-            let child2 = exec(`pm2 log ${req.params.name}_${element}`)
-            // let child2 = exec(`pm2 log ${req.params.name}`);
-            child2.stdout.on('data', function (data) {
-                // 如何拿到当前用户对应的 socket 对象
-                io.to(req.params.name).emit('execute.' + element, data);
-            });
+    exec(`pm2 start ${req.params.name}/execute.backend.js --name ${req.params.name}_backend --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
+    exec(`pm2 start ${req.params.name}/execute.gateway.js --name ${req.params.name}_gateway --no-autorestart`, { cwd: getFolderPath(req.params.name) }).stderr.on('data', function (data) { console.log(data) })
+    // 执行后，根据 pm2 log xxx 打印日志
+    ;['backend', 'gateway'].forEach(element => {
+        let child2 = exec(`pm2 log ${req.params.name}_${element}`)
+        // let child2 = exec(`pm2 log ${req.params.name}`);
+        child2.stdout.on('data', function (data) {
+            // 如何拿到当前用户对应的 socket 对象
+            io.to(req.params.name).emit('execute.' + element, data);
         });
+    });
     res.send();
 });
 
