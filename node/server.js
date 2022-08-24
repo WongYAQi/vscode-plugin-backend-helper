@@ -70,29 +70,13 @@ app.get('/status/:name', function (req, res) {
 });
 // 停止某个人的服务, 删除已有的日志
 app.post('/stop/:name', function (req, res) {
-    pm2.connect((err) => {
-        if (err) {
-            return pm2.disconnect();
-        }
-        pm2.stop(req.params.name + '_backend', function (err) {
-            if (err) {
-                io.to(req.params.name).emit('execute.backend', err);
-                return;
-            }
-            io.to(req.params.name).emit('execute.backend', 'Stopped');
-        });
-        pm2.stop(req.params.name + '_gateway', function (err) {
-            if (err) {
-                io.to(req.params.name).emit('execute.gateway', err);
-                return;
-            }
-            io.to(req.params.name).emit('execute.gateway', 'Stopped');
-        });
-        (0, child_process_1.exec)('pm2 flush ' + req.params.name + '_backend');
-        (0, child_process_1.exec)('pm2 flush ' + req.params.name + '_gateway');
-        pm2.disconnect();
-    });
-    res.send();
+    (0, child_process_1.exec)('pm2 delete ' + req.params.name + '_backend');
+    (0, child_process_1.exec)('pm2 delete ' + req.params.name + '_gateway');
+    (0, child_process_1.exec)('pm2 flush ' + req.params.name + '_backend');
+    (0, child_process_1.exec)('pm2 flush ' + req.params.name + '_gateway');
+    setTimeout(() => {
+        res.send();
+    }, 3000);
 });
 // 编译代码，执行 bash build-release.sh 命令，将输出提交到前台, 以 compile 注册的 socket.io 监听
 app.post('/compile/:name', function (req, res) {
