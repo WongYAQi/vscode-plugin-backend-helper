@@ -12,6 +12,7 @@ const execute_1 = require("./commands/execute");
 const const_1 = require("./const");
 const websocket_1 = require("./commands/websocket");
 const stop_1 = require("./commands/stop");
+const axios_1 = require("axios");
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 function activate(context) {
@@ -25,7 +26,23 @@ function activate(context) {
     vscode.commands.registerCommand(const_1.default.COMMANDS.INITWEBSOCKET, websocket_1.default);
     vscode.commands.registerCommand(const_1.default.COMMANDS.STOP, stop_1.default);
     vscode.commands.executeCommand('setContext', 'backendHelper.status', '');
-    // 激活时，链接 websocket 工作
+    if (window.location.search) {
+        var exec = /folder=\/root\/(.*?)\/logwire-backend/.exec(window.location.search);
+        if (exec) {
+            var username = exec[1];
+            axios_1.default.get('http://127.0.0.1:3000/init/' + username).then((res) => {
+                const data = res.data;
+                if (data) {
+                    // 存在 value 说明是新创建的，提示用户拷贝 ssh
+                    vscode.commands.executeCommand(const_1.default.COMMANDS.CONFIRMSSH, data);
+                }
+                else {
+                    // 再次触发 backendProvider.refresh
+                    vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
+                }
+            });
+        }
+    }
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated
