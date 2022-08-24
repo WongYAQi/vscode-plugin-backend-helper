@@ -77,7 +77,6 @@ app.get('/status/:name', function (req: any, res: any) {
 app.post('/stop/:name', function (req: any, res: any) {
     pm2.connect((err) => {
         if (err) {
-            res.send(err);
             return pm2.disconnect();
         }
         pm2.stop(req.params.name + '_backend', function (err) {
