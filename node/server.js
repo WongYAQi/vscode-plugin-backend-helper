@@ -100,6 +100,7 @@ app.post('/stop/:name', function (req, res) {
 app.post('/compile/:name', function (req, res) {
     let child = (0, child_process_1.exec)('bash build-release.sh --module="logwire"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') });
     child.stdout.on('data', function (data) {
+        console.log('compile test', data);
         io.to(req.params.name).emit('compile', data);
     });
     child.stderr.on('data', function (data) {
@@ -110,7 +111,7 @@ app.post('/compile/:name', function (req, res) {
         assemble.on('exit', function () {
             fs.copyFileSync('./application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/config/application-server.properties');
             fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/config/application-gateway.properties');
-            io.to(req.params.name).emit('status', { backend: '', gateway: '' });
+            io.to(req.params.name).emit('status', { backend: 'stopped', gateway: 'stopped' });
             res.send({ code, signal });
         });
     });
@@ -118,8 +119,8 @@ app.post('/compile/:name', function (req, res) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req, res) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
-    (0, child_process_1.exec)(`pm2 start java -- -jar logwire-backend-starter.jar --name ${req.params.name}_backend --no-autorestart`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
-    (0, child_process_1.exec)(`pm2 start java -- -jar logwire-gateway-starter.jar --name ${req.params.name}_gateway --no-autorestart`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
+    (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
+    (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
     ['backend', 'gateway'].forEach(element => {
         let child2 = (0, child_process_1.exec)(`pm2 log ${req.params.name}_${element}`);
         // let child2 = exec(`pm2 log ${req.params.name}`);

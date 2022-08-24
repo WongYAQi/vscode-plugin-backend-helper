@@ -15,6 +15,7 @@ function initialWebsocketConnection(username) {
             console.log(data);
         });
         socket.on('compile', function (data) {
+            console.log('compile', data);
             let channel = exports.storedChannel.get('compile');
             if (!channel) {
                 channel = vscode.window.createOutputChannel('compile');

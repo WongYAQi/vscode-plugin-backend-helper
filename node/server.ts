@@ -106,6 +106,7 @@ app.post('/stop/:name', function (req: any, res: any) {
 app.post('/compile/:name', function (req: any, res: any) {
     let child = exec('bash build-release.sh --module="logwire"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') });
     child.stdout.on('data', function (data) {
+        console.log('compile test', data)
         io.to(req.params.name).emit('compile', data);
     });
     child.stderr.on('data', function (data) {
@@ -116,7 +117,7 @@ app.post('/compile/:name', function (req: any, res: any) {
         assemble.on('exit', function () {
             fs.copyFileSync('./application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/config/application-server.properties');
             fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/config/application-gateway.properties');
-            io.to(req.params.name).emit('status', { backend: '', gateway: '' })
+            io.to(req.params.name).emit('status', { backend: 'stopped', gateway: 'stopped' })
             res.send({ code, signal });
         })
     });
