@@ -53,8 +53,8 @@ app.get('/gitclone/:name', function (req: any, res: any) {
         res.send('克隆失败');
     });
     child.on('exit', () => {
-        fs.cpSync('./execute.backend.js', '/root/' + username);
-        fs.cpSync('./execute.gateway.js', '/root/' + username);
+        fs.copyFileSync('./execute.backend.js', '/root/' + username + '/execute.backend.js');
+        fs.copyFileSync('./execute.gateway.js', '/root/' + username + '/execute.gateway.js');
         res.send(path.join(folder, 'logwire-backend'));
     });
 });
