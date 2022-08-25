@@ -100,7 +100,9 @@ app.post('/execute/:name', function (req, res) {
             io.to(req.params.name).emit('execute.' + element, data);
         });
     });
-    sendCurrentStatus(req.params.name);
+    setTimeout(() => {
+        sendCurrentStatus(req.params.name);
+    });
     res.send();
 });
 // ====================Websocket 通信=====================
@@ -189,7 +191,7 @@ function getCurrentStatus(username) {
                 }
                 else {
                     resolve(list.reduce((p, n) => {
-                        p[n.name] = {
+                        p[n.name.replace(/_.*/, '')] = {
                             backend: n.pm2_env?.status,
                             gateway: n.pm2_env?.status
                         };

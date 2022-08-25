@@ -108,7 +108,9 @@ app.post('/execute/:name', function (req: any, res: any) {
                 io.to(req.params.name).emit('execute.' + element, data);
             });
         });
-    sendCurrentStatus(req.params.name)
+    setTimeout(() => {
+        sendCurrentStatus(req.params.name)
+    })
     res.send();
 });
 
@@ -206,7 +208,7 @@ function getCurrentStatus(username?: string): Promise<{ [k: string]: { backend, 
                     });
                 } else {
                     resolve(list.reduce((p, n) => {
-                        p[n.name] = {
+                        p[n.name.replace(/_.*/, '')] = {
                             backend: n.pm2_env?.status,
                             gateway: n.pm2_env?.status
                         }

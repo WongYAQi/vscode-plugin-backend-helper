@@ -3,7 +3,6 @@ import * as vscode from 'vscode'
 import _const from '../const'
 
 export const storedChannel: Map<string, vscode.OutputChannel> = new Map()
-
 export default function initialWebsocketConnection (username: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const socket = io('http://127.0.0.1:3000', { auth: { username }, secure: true, reconnection: true, rejectUnauthorized: false })
@@ -24,9 +23,12 @@ export default function initialWebsocketConnection (username: string): Promise<v
             }
             if (lines_compile > 200) {
                 channel.clear()
+                lines_compile = 0
             }
-            lines_compile++
-            channel.append(data + '\n')
+            data.split('\n').forEach(line => {
+                lines_compile++
+                channel.append(line + '\n')
+            })
         })
 
         let lines_backend = 0
@@ -39,9 +41,12 @@ export default function initialWebsocketConnection (username: string): Promise<v
             }
             if (lines_backend > 200) {
                 channel.clear()
+                lines_backend = 0
             }
-            lines_backend++
-            channel.append(data + '\n')
+            data.split('\n').forEach(line => {
+                lines_backend++
+                channel.append(line + '\n')
+            })
         })
 
 
@@ -55,17 +60,20 @@ export default function initialWebsocketConnection (username: string): Promise<v
             }
             if (lines_gateway > 200) {
                 channel.clear()
+                lines_gateway = 0
             }
-            lines_gateway++
-            channel.append(data + '\n')
+            data.split('\n').forEach(line => {
+                lines_gateway++
+                channel.append(line + '\n')
+            })
         })
 
 
         // 关于 status ，data 表现为 { backend: '', gateway: '' } 的序列化字符串
         socket.on('status', function (data) {
-            const status = JSON.parse(data)
-            const { backend, gateway } = status
+            const status = Object.assign({ backend: '', gateway: '' }, data)
             console.log(status)
+            const { backend, gateway } = status
             // 有任何一个运行中，则整体处于 运行中
             if (backend === 'online' && gateway === 'online') {
                 vscode.commands.executeCommand('setContext', 'backendHelper.status', 'running');

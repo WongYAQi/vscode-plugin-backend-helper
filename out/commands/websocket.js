@@ -24,9 +24,12 @@ function initialWebsocketConnection(username) {
             }
             if (lines_compile > 200) {
                 channel.clear();
+                lines_compile = 0;
             }
-            lines_compile++;
-            channel.append(data + '\n');
+            data.split('\n').forEach(line => {
+                lines_compile++;
+                channel.append(line + '\n');
+            });
         });
         let lines_backend = 0;
         socket.on('execute.backend', function (data) {
@@ -38,9 +41,12 @@ function initialWebsocketConnection(username) {
             }
             if (lines_backend > 200) {
                 channel.clear();
+                lines_backend = 0;
             }
-            lines_backend++;
-            channel.append(data + '\n');
+            data.split('\n').forEach(line => {
+                lines_backend++;
+                channel.append(line + '\n');
+            });
         });
         let lines_gateway = 0;
         socket.on('execute.gateway', function (data) {
@@ -52,13 +58,17 @@ function initialWebsocketConnection(username) {
             }
             if (lines_gateway > 200) {
                 channel.clear();
+                lines_gateway = 0;
             }
-            lines_gateway++;
-            channel.append(data + '\n');
+            data.split('\n').forEach(line => {
+                lines_gateway++;
+                channel.append(line + '\n');
+            });
         });
         // 关于 status ，data 表现为 { backend: '', gateway: '' } 的序列化字符串
         socket.on('status', function (data) {
-            const status = JSON.parse(data);
+            const status = Object.assign({ backend: '', gateway: '' }, data);
+            console.log(status);
             const { backend, gateway } = status;
             // 有任何一个运行中，则整体处于 运行中
             if (backend === 'online' && gateway === 'online') {
