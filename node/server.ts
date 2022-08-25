@@ -112,17 +112,17 @@ app.post('/execute/:name', function (req: any, res: any) {
     
     exec(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
     setTimeout(() => {
-        exec(`pm2 log ${req.params.name}_backend`, function (err, stdout, stderr) {
-            io.to(req.params.name).emit('execute.backend', stdout);
+        exec(`pm2 log ${req.params.name}_backend`).stdout.on('data', data => {
+            io.to(req.params.name).emit('execute.backend', data);
         })
-        exec(`pm2 log gateway`, function (err, stdout, stderr) {
-            io.to(req.params.name).emit('execute.gateway', stdout);
+        exec(`pm2 log gateway`).stdout.on('data', data => {
+            io.to(req.params.name).emit('execute.gateway', data);
         })
+        res.send();
     }, 1000)
     setTimeout(() => {
         sendCurrentStatus(req.params.name)
     })
-    res.send();
 });
 
 
