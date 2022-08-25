@@ -1,6 +1,6 @@
-## Release Notes
+### 0.1.0
+内测版本
 
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-第一版
+## TODO
+* [ ] 根据当前用户名称，自动创建 Prostgres 数据库  
+* [ ] 拷贝 layout 等初始资源目录
