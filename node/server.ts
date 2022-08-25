@@ -174,6 +174,8 @@ function initialUserInfomation(user: string): Promise<string> {
     const folderPath = getFolderPath(user);
     // 1.
     fs.mkdirSync(folderPath);
+    fs.mkdirSync(path.join(folderPath, 'products'))
+    fs.mkdirSync(path.join(folderPath, 'tenants_config'))
     // 2.
     return new Promise((resolve, reject) => {
         let child = exec(`ssh-keygen -t rsa -b 2048 -C "${user}@greaconsulting.com" -N ""  -f ${path.join(folderPath, 'rsa')}`);

@@ -22,7 +22,7 @@ export default function enterUserName () {
                             vscode.commands.executeCommand(_const.COMMANDS.CONFIRMSSH, data)
                         } else {
                             // 直接进入用户文件夹
-                            vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file('/root/' + username + '/logwire-backend'))
+                            vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file('/root/' + username))
                         }
                     })
                 })

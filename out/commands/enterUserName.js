@@ -25,7 +25,7 @@ function enterUserName() {
                         }
                         else {
                             // 直接进入用户文件夹
-                            vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file('/root/' + username + '/logwire-backend'));
+                            vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file('/root/' + username));
                         }
                     });
                 });

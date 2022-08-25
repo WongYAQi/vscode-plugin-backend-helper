@@ -27,7 +27,7 @@ function activate(context) {
     vscode.commands.registerCommand(const_1.default.COMMANDS.STOP, stop_1.default);
     vscode.commands.executeCommand('setContext', 'backendHelper.status', '');
     if (vscode.workspace.workspaceFolders.length) {
-        var exec = /\/root\/(.*?)\/logwire-backend/.exec(vscode.workspace.workspaceFolders[0].uri.path);
+        var exec = /\/root\/(.+)$/.exec(vscode.workspace.workspaceFolders[0].uri.path);
         if (exec) {
             var username = exec[1];
             (0, enterUserName_1.setUserName)(username);

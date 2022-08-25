@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.executeCommand('setContext', 'backendHelper.status', '');
     if (vscode.workspace.workspaceFolders.length) {
-        var exec = /\/root\/(.*?)\/logwire-backend/.exec(vscode.workspace.workspaceFolders[0].uri.path)
+        var exec = /\/root\/(.+)$/.exec(vscode.workspace.workspaceFolders[0].uri.path)
         if (exec) {
             var username = exec[1]
             setUserName(username)
