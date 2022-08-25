@@ -148,6 +148,7 @@ server.listen(port, () => {
     // 启动成功后，每隔3s执行一次状态的发送
     setInterval(() => {
         getCurrentStatus().then((result) => {
+            console.log(result)
             result.forEach(item => {
                 if (item.name !== 'gateway') {
                     io.to(item.name.replace(/_.*/)).emit('status', {
@@ -167,6 +168,7 @@ server.listen(port, () => {
 
 function sendCurrentStatus(username) {
     getCurrentStatus(username).then(result => {
+        console.log(result)
         io.to(username).emit('status', {
             backend: result.find(o => o.name !== 'gateway')?.status,
             gateway: result.find(o => o.name === 'gateway')?.status
