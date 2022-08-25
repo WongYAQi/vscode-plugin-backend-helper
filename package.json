@@ -2,7 +2,7 @@
   "name": "vscode-plugin-backend-helper",
   "displayName": "vscode-plugin-backend-helper",
   "description": "",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "publisher": "WongYAQi",
   "engines": {
     "vscode": "^1.67.0"
