@@ -21,8 +21,6 @@ export default function enterUserName () {
                             // 存在 value 说明是新创建的，提示用户拷贝 ssh
                             vscode.commands.executeCommand(_const.COMMANDS.CONFIRMSSH, data)
                         } else {
-                            // 再次触发 backendProvider.refresh
-                            vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
                             // 直接进入用户文件夹
                             vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file('/root/' + username + '/logwire-backend'))
                         }

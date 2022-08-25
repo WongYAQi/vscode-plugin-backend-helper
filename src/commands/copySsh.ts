@@ -14,7 +14,6 @@ export default function copySshKey (ssh: string) {
                 const folder = res.data
                 vscode.window.showInformationMessage('仓库克隆完毕')
                 // TODO: 应该让 code-server 显示这个仓库中的内容
-                vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
                 vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(folder))
             })
         }

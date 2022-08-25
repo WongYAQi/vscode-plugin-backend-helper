@@ -33,9 +33,11 @@ app.get('/init/:name', (req: any, res: any) => {
             // 如果错误说明当前用户还没有创建，那么执行一次创建
             // 创建完成后，返回
             initialUserInfomation(req.params.name).then((ssh) => res.send(ssh)).catch((err) => {
+                sendCurrentStatus(req.params.name)
                 res.status(500).send(err);
             });
         } else {
+            sendCurrentStatus(req.params.name)
             res.send();
         }
     });
@@ -50,27 +52,13 @@ app.get('/gitclone/:name', function (req: any, res: any) {
     const folder = getFolderPath(req.params.name);
     let child = exec('git clone ' + repo, { cwd: folder });
     child.on('exit', () => {
-       res.send(path.join(folder, 'logwire-backend'));
+        sendCurrentStatus(req.params.name)
+        res.send(path.join(folder, 'logwire-backend'));
     });
 });
 
 app.get('/getFolerPath/:name', function (req: any, res: any) {
     res.send(getFolderPath(req.params.name));
-});
-
-// 如果用户没有初始化，返回 undefined；如果初始化，则返回对应状态
-app.get('/status/:name', function (req: any, res: any) {
-    fs.stat(getFolderPath(req.params.name), function (err, stat) {
-        if (err) {
-            res.send(undefined);
-        } else {
-            sendCurrentStatusBySocekt(req.params.name).then((result) => {
-                res.send(result)
-            }).catch(err => {
-                res.send(err)
-            })
-        }
-    });
 });
 
 // 停止某个人的服务, 删除已有的日志
@@ -80,6 +68,7 @@ app.post('/stop/:name', function (req: any, res: any) {
     exec('pm2 flush ' + req.params.name + '_backend');
     exec('pm2 flush ' + req.params.name + '_gateway');
     setTimeout(() => {
+        sendCurrentStatus(req.params.name)
         res.send();
     }, 3000)
 });
@@ -99,6 +88,7 @@ app.post('/compile/:name', function (req: any, res: any) {
             fs.copyFileSync('./application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/config/application-server.properties');
             fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/config/application-gateway.properties');
             io.to(req.params.name).emit('status', { backend: 'stopped', gateway: 'stopped' })
+            sendCurrentStatus(req.params.name)
             res.send({ code, signal });
         })
     });
@@ -109,15 +99,16 @@ app.post('/execute/:name', function (req: any, res: any) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
     exec(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
     exec(`pm2 start --name ${req.params.name}_gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
-    // 执行后，根据 pm2 log xxx 打印日志
-    ;['backend', 'gateway'].forEach(element => {
-        let child2 = exec(`pm2 log ${req.params.name}_${element} --lines 10000`)
-        // let child2 = exec(`pm2 log ${req.params.name}`);
-        child2.stdout.on('data', function (data) {
-            // 如何拿到当前用户对应的 socket 对象
-            io.to(req.params.name).emit('execute.' + element, data);
+        // 执行后，根据 pm2 log xxx 打印日志
+        ;['backend', 'gateway'].forEach(element => {
+            let child2 = exec(`pm2 log ${req.params.name}_${element} --lines 10000`)
+            // let child2 = exec(`pm2 log ${req.params.name}`);
+            child2.stdout.on('data', function (data) {
+                // 如何拿到当前用户对应的 socket 对象
+                io.to(req.params.name).emit('execute.' + element, data);
+            });
         });
-    });
+    sendCurrentStatus(req.params.name)
     res.send();
 });
 
@@ -141,12 +132,28 @@ io.use((socket, next) => {
 // ============== 启动==============
 server.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
+    // 启动成功后，每隔3s执行一次状态的发送
+    setInterval(() => {
+        getCurrentStatus().then((result) => {
+            Object.keys(result).forEach(user => {
+                io.to(user).emit('status', result[user])
+            })
+        })
+    }, 3000)
 });
 
 
 // ====================pm2 监控================
 
 // ====================辅助方法=============
+
+function sendCurrentStatus(username) {
+    getCurrentStatus(username).then(result => {
+        Object.keys(result).forEach(user => {
+            io.to(user).emit('status', result[user])
+        })
+    })
+}
 
 /**
  * 初始化用户信息, 存到一个本地存储中
@@ -181,21 +188,31 @@ function getFolderPath(name: string) {
         : '/root/' + name;
 }
 
-function sendCurrentStatusBySocekt(username: string): Promise<{ backend, gateway }> {
+function getCurrentStatus(username?: string): Promise<{ [k: string]: { backend, gateway } }> {
     return new Promise((resolve, reject) => {
         pm2.connect((err) => {
-            console.log(err)
             if (err) {
                 reject(err)
                 return;
             }
             pm2.list((err, list) => {
-                console.log(list)
                 pm2.disconnect();
-                resolve({
-                    backend: list.find(o => o.name === username + '_backend')?.pm2_env?.status,
-                    gateway: list.find(o => o.name === username + '_gateway')?.pm2_env?.status
-                });
+                if (username) {
+                    resolve({
+                        [username]: {
+                            backend: list.find(o => o.name === username + '_backend')?.pm2_env?.status,
+                            gateway: list.find(o => o.name === username + '_gateway')?.pm2_env?.status
+                        }
+                    });
+                } else {
+                    resolve(list.reduce((p, n) => {
+                        p[n.name] = {
+                            backend: n.pm2_env?.status,
+                            gateway: n.pm2_env?.status
+                        }
+                        return p
+                    }, {}))
+                }
             });
         });
     })

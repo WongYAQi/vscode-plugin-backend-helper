@@ -14,6 +14,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
             console.log(data)
         });
 
+        let lines_compile = 0
         socket.on('compile', function (data) {
             let channel = storedChannel.get('compile') as vscode.OutputChannel
             if (!channel) {
@@ -21,9 +22,14 @@ export default function initialWebsocketConnection (username: string): Promise<v
                 channel.show()
                 storedChannel.set('compile', channel)
             }
+            if (lines_compile > 200) {
+                channel.clear()
+            }
+            lines_compile++
             channel.append(data + '\n')
         })
 
+        let lines_backend = 0
         socket.on('execute.backend', function (data) {
             let channel = storedChannel.get('execute.backend') as vscode.OutputChannel
             if (!channel) {
@@ -31,8 +37,15 @@ export default function initialWebsocketConnection (username: string): Promise<v
                 channel.show()
                 storedChannel.set('execute.backend', channel)
             }
+            if (lines_backend > 200) {
+                channel.clear()
+            }
+            lines_backend++
             channel.append(data + '\n')
         })
+
+
+        let lines_gateway = 0
         socket.on('execute.gateway', function (data) {
             let channel = storedChannel.get('execute.gateway') as vscode.OutputChannel
             if (!channel) {
@@ -40,6 +53,10 @@ export default function initialWebsocketConnection (username: string): Promise<v
                 channel.show()
                 storedChannel.set('execute.gateway', channel)
             }
+            if (lines_gateway > 200) {
+                channel.clear()
+            }
+            lines_gateway++
             channel.append(data + '\n')
         })
 
@@ -48,6 +65,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
         socket.on('status', function (data) {
             const status = JSON.parse(data)
             const { backend, gateway } = status
+            console.log(status)
             // 有任何一个运行中，则整体处于 运行中
             if (backend === 'online' && gateway === 'online') {
                 vscode.commands.executeCommand('setContext', 'backendHelper.status', 'running');
@@ -58,7 +76,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
             } else {
                 vscode.commands.executeCommand('setContext', 'backendHelper.status', 'loading');
             }
-            vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
+            vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH, status)
         })
     })
 }

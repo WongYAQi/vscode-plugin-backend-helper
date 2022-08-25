@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
     const backendProvider = new BackendProvider()
     vscode.window.registerTreeDataProvider(_const.VIEW.ID, backendProvider)
     vscode.commands.registerCommand('enterUserName', enterUserName)
-    vscode.commands.registerCommand(_const.COMMANDS.BACKENDREFRESH, () => backendProvider.refresh())
+    vscode.commands.registerCommand(_const.COMMANDS.BACKENDREFRESH, (s) => backendProvider.refresh(s))
     vscode.commands.registerCommand(_const.COMMANDS.COMPILE, compile)
     vscode.commands.registerCommand(_const.COMMANDS.EXECUTE, execute)
     vscode.commands.registerCommand(_const.COMMANDS.CONFIRMSSH, copySshKey)
@@ -36,9 +36,6 @@ export function activate(context: vscode.ExtensionContext) {
                     if (data) {
                         // 存在 value 说明是新创建的，提示用户拷贝 ssh
                         vscode.commands.executeCommand(_const.COMMANDS.CONFIRMSSH, data)
-                    } else {
-                        // 再次触发 backendProvider.refresh
-                        vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
                     }
                 })
             })

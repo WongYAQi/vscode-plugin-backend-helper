@@ -8,6 +8,5 @@ export default function stop () {
     vscode.commands.executeCommand('setContext', 'backendHelper.status', 'loading');
     axios.post('http://127.0.0.1:3000/stop/' + getUserName()).then(() => {
         vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
-        vscode.commands.executeCommand(_const.COMMANDS.BACKENDREFRESH)
     })
 }

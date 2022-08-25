@@ -14,6 +14,7 @@ function initialWebsocketConnection(username) {
         socket.onAny((data) => {
             console.log(data);
         });
+        let lines_compile = 0;
         socket.on('compile', function (data) {
             let channel = exports.storedChannel.get('compile');
             if (!channel) {
@@ -21,8 +22,13 @@ function initialWebsocketConnection(username) {
                 channel.show();
                 exports.storedChannel.set('compile', channel);
             }
+            if (lines_compile > 200) {
+                channel.clear();
+            }
+            lines_compile++;
             channel.append(data + '\n');
         });
+        let lines_backend = 0;
         socket.on('execute.backend', function (data) {
             let channel = exports.storedChannel.get('execute.backend');
             if (!channel) {
@@ -30,8 +36,13 @@ function initialWebsocketConnection(username) {
                 channel.show();
                 exports.storedChannel.set('execute.backend', channel);
             }
+            if (lines_backend > 200) {
+                channel.clear();
+            }
+            lines_backend++;
             channel.append(data + '\n');
         });
+        let lines_gateway = 0;
         socket.on('execute.gateway', function (data) {
             let channel = exports.storedChannel.get('execute.gateway');
             if (!channel) {
@@ -39,6 +50,10 @@ function initialWebsocketConnection(username) {
                 channel.show();
                 exports.storedChannel.set('execute.gateway', channel);
             }
+            if (lines_gateway > 200) {
+                channel.clear();
+            }
+            lines_gateway++;
             channel.append(data + '\n');
         });
         // 关于 status ，data 表现为 { backend: '', gateway: '' } 的序列化字符串
@@ -58,7 +73,7 @@ function initialWebsocketConnection(username) {
             else {
                 vscode.commands.executeCommand('setContext', 'backendHelper.status', 'loading');
             }
-            vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
+            vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH, status);
         });
     });
 }

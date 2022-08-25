@@ -19,7 +19,7 @@ function activate(context) {
     const backendProvider = new backendProvider_1.BackendProvider();
     vscode.window.registerTreeDataProvider(const_1.default.VIEW.ID, backendProvider);
     vscode.commands.registerCommand('enterUserName', enterUserName_1.default);
-    vscode.commands.registerCommand(const_1.default.COMMANDS.BACKENDREFRESH, () => backendProvider.refresh());
+    vscode.commands.registerCommand(const_1.default.COMMANDS.BACKENDREFRESH, (s) => backendProvider.refresh(s));
     vscode.commands.registerCommand(const_1.default.COMMANDS.COMPILE, compile_1.default);
     vscode.commands.registerCommand(const_1.default.COMMANDS.EXECUTE, execute_1.default);
     vscode.commands.registerCommand(const_1.default.COMMANDS.CONFIRMSSH, copySsh_1.default);
@@ -37,10 +37,6 @@ function activate(context) {
                     if (data) {
                         // 存在 value 说明是新创建的，提示用户拷贝 ssh
                         vscode.commands.executeCommand(const_1.default.COMMANDS.CONFIRMSSH, data);
-                    }
-                    else {
-                        // 再次触发 backendProvider.refresh
-                        vscode.commands.executeCommand(const_1.default.COMMANDS.BACKENDREFRESH);
                     }
                 });
             });
