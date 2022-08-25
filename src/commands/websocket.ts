@@ -41,10 +41,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
             }
             if (lines_backend > 200) {
                 channel.clear()
-                channel.dispose()
                 lines_backend = 0
-                channel = vscode.window.createOutputChannel('execute.backend')
-                storedChannel.set('execute.backend', channel)
             }
             data.split('\n').forEach(line => {
                 lines_backend++
@@ -63,10 +60,7 @@ export default function initialWebsocketConnection (username: string): Promise<v
             }
             if (lines_gateway > 200) {
                 channel.clear()
-                channel.dispose()
                 lines_gateway = 0
-                channel = vscode.window.createOutputChannel('execute.gateway')
-                storedChannel.set('execute.gateway', channel)
             }
             data.split('\n').forEach(line => {
                 lines_gateway++

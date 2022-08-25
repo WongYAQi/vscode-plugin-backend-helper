@@ -41,10 +41,7 @@ function initialWebsocketConnection(username) {
             }
             if (lines_backend > 200) {
                 channel.clear();
-                channel.dispose();
                 lines_backend = 0;
-                channel = vscode.window.createOutputChannel('execute.backend');
-                exports.storedChannel.set('execute.backend', channel);
             }
             data.split('\n').forEach(line => {
                 lines_backend++;
@@ -61,10 +58,7 @@ function initialWebsocketConnection(username) {
             }
             if (lines_gateway > 200) {
                 channel.clear();
-                channel.dispose();
                 lines_gateway = 0;
-                channel = vscode.window.createOutputChannel('execute.gateway');
-                exports.storedChannel.set('execute.gateway', channel);
             }
             data.split('\n').forEach(line => {
                 lines_gateway++;
