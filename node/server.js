@@ -49,6 +49,8 @@ app.get('/gitclone/:name', function (req, res) {
     const folder = getFolderPath(req.params.name);
     let child = (0, child_process_1.exec)('git clone ' + repo, { cwd: folder });
     child.on('exit', () => {
+        // 拷贝 demo-v2 的前端资源到每个人的服务上
+        fs.cpSync('/usr/logwire2-config-demo', '/root/' + username + '/tenants_config', { recursive: true });
         sendCurrentStatus(req.params.name);
         res.send(folder);
     });
