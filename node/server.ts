@@ -99,23 +99,33 @@ app.post('/compile/:name', function (req: any, res: any) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req: any, res: any) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
+    getCurrentStatus().then(res => {
+        if (res.some(o => o.name === 'gateway' && o.status === 'online')) {
+            // 存在gateway，而且正在运行
+        } else {
+            exec('pm2 delete gateway')
+            setTimeout(() => {
+                exec(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
+            })
+        }
+    })
+    
     exec(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
-    exec(`pm2 start --name ${req.params.name}_gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
-        // 执行后，根据 pm2 log xxx 打印日志
-        ;['backend', 'gateway'].forEach(element => {
-            let child2 = exec(`pm2 log ${req.params.name}_${element}`)
-            // let child2 = exec(`pm2 log ${req.params.name}`);
-            child2.stdout.on('data', function (data) {
-                // 如何拿到当前用户对应的 socket 对象
-                io.to(req.params.name).emit('execute.' + element, data);
-            });
-            child2.stderr.on('data', function (err) {
-                console.log('读取日志', err)
-            })
-            child2.on('exit', function () {
-                console.log('读取日志结束')
-            })
+    // 执行后，根据 pm2 log xxx 打印日志
+    ;['backend'].forEach(element => {
+        let child2 = exec(`pm2 log ${req.params.name}_${element}`)
+        // let child2 = exec(`pm2 log ${req.params.name}`);
+        child2.stdout.on('data', function (data) {
+            // 如何拿到当前用户对应的 socket 对象
+            io.to(req.params.name).emit('execute.' + element, data);
         });
+        child2.stderr.on('data', function (err) {
+            console.log('读取日志', err)
+        })
+        child2.on('exit', function () {
+            console.log('读取日志结束')
+        })
+    });
     setTimeout(() => {
         sendCurrentStatus(req.params.name)
     })
@@ -145,8 +155,13 @@ server.listen(port, () => {
     // 启动成功后，每隔3s执行一次状态的发送
     setInterval(() => {
         getCurrentStatus().then((result) => {
-            Object.keys(result).forEach(user => {
-                io.to(user).emit('status', result[user])
+            result.forEach(item => {
+                if (item.name !== 'gateway') {
+                    io.to(item.name.replace(/_.*/)).emit('status', {
+                        backend: item.status,
+                        gateway: result.find(o => o.name === 'gateway')?.status
+                    })
+                }
             })
         })
     }, 3000)
@@ -159,8 +174,9 @@ server.listen(port, () => {
 
 function sendCurrentStatus(username) {
     getCurrentStatus(username).then(result => {
-        Object.keys(result).forEach(user => {
-            io.to(user).emit('status', result[user])
+        io.to(username).emit('status', {
+            backend: result.find(o => o.name !== 'gateway')?.status,
+            gateway: result.find(o => o.name === 'gateway')?.status
         })
     })
 }
@@ -200,7 +216,8 @@ function getFolderPath(name: string) {
         : '/root/' + name;
 }
 
-function getCurrentStatus(username?: string): Promise<{ [k: string]: { backend, gateway } }> {
+// 获取状态时，gateway 永远只有一个
+function getCurrentStatus(username?: string): Promise<{ name, status }[]> {
     return new Promise((resolve, reject) => {
         pm2.connect((err) => {
             if (err) {
@@ -210,20 +227,14 @@ function getCurrentStatus(username?: string): Promise<{ [k: string]: { backend, 
             pm2.list((err, list) => {
                 pm2.disconnect();
                 if (username) {
-                    resolve({
-                        [username]: {
-                            backend: list.find(o => o.name === username + '_backend')?.pm2_env?.status,
-                            gateway: list.find(o => o.name === username + '_gateway')?.pm2_env?.status
-                        }
-                    });
+                    resolve([
+                        { name: username + '_backend', status: list.find(o => o.name === username + '_backend')?.pm2_env?.status },
+                        { name: 'gateway', status: list.find(o => o.name === 'gateway')?.pm2_env?.status }
+                    ]);
                 } else {
-                    resolve(list.reduce((p, n) => {
-                        p[n.name.replace(/_.*/, '')] = {
-                            backend: n.pm2_env?.status,
-                            gateway: n.pm2_env?.status
-                        }
-                        return p
-                    }, {}))
+                    resolve(list.map(o => {
+                        return { name: o.name, status: o.pm2_env.status }
+                    }))
                 }
             });
         });

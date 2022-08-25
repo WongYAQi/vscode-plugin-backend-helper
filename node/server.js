@@ -92,9 +92,19 @@ app.post('/compile/:name', function (req, res) {
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req, res) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
+    getCurrentStatus().then(res => {
+        if (res.some(o => o.name === 'gateway' && o.status === 'online')) {
+            // 存在gateway，而且正在运行
+        }
+        else {
+            (0, child_process_1.exec)('pm2 delete gateway');
+            setTimeout(() => {
+                (0, child_process_1.exec)(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
+            });
+        }
+    });
     (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
-    (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
-    ['backend', 'gateway'].forEach(element => {
+    ['backend'].forEach(element => {
         let child2 = (0, child_process_1.exec)(`pm2 log ${req.params.name}_${element}`);
         // let child2 = exec(`pm2 log ${req.params.name}`);
         child2.stdout.on('data', function (data) {
@@ -133,8 +143,13 @@ server.listen(port, () => {
     // 启动成功后，每隔3s执行一次状态的发送
     setInterval(() => {
         getCurrentStatus().then((result) => {
-            Object.keys(result).forEach(user => {
-                io.to(user).emit('status', result[user]);
+            result.forEach(item => {
+                if (item.name !== 'gateway') {
+                    io.to(item.name.replace(/_.*/)).emit('status', {
+                        backend: item.status,
+                        gateway: result.find(o => o.name === 'gateway')?.status
+                    });
+                }
             });
         });
     }, 3000);
@@ -143,8 +158,9 @@ server.listen(port, () => {
 // ====================辅助方法=============
 function sendCurrentStatus(username) {
     getCurrentStatus(username).then(result => {
-        Object.keys(result).forEach(user => {
-            io.to(user).emit('status', result[user]);
+        io.to(username).emit('status', {
+            backend: result.find(o => o.name !== 'gateway')?.status,
+            gateway: result.find(o => o.name === 'gateway')?.status
         });
     });
 }
@@ -182,6 +198,7 @@ function getFolderPath(name) {
         ? path.resolve('D:\\git\\vscode-plugin-backend-helper\\node', name)
         : '/root/' + name;
 }
+// 获取状态时，gateway 永远只有一个
 function getCurrentStatus(username) {
     return new Promise((resolve, reject) => {
         pm2.connect((err) => {
@@ -192,21 +209,15 @@ function getCurrentStatus(username) {
             pm2.list((err, list) => {
                 pm2.disconnect();
                 if (username) {
-                    resolve({
-                        [username]: {
-                            backend: list.find(o => o.name === username + '_backend')?.pm2_env?.status,
-                            gateway: list.find(o => o.name === username + '_gateway')?.pm2_env?.status
-                        }
-                    });
+                    resolve([
+                        { name: username + '_backend', status: list.find(o => o.name === username + '_backend')?.pm2_env?.status },
+                        { name: 'gateway', status: list.find(o => o.name === 'gateway')?.pm2_env?.status }
+                    ]);
                 }
                 else {
-                    resolve(list.reduce((p, n) => {
-                        p[n.name.replace(/_.*/, '')] = {
-                            backend: n.pm2_env?.status,
-                            gateway: n.pm2_env?.status
-                        };
-                        return p;
-                    }, {}));
+                    resolve(list.map(o => {
+                        return { name: o.name, status: o.pm2_env.status };
+                    }));
                 }
             });
         });

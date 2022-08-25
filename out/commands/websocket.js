@@ -68,16 +68,15 @@ function initialWebsocketConnection(username) {
         // 关于 status ，data 表现为 { backend: '', gateway: '' } 的序列化字符串
         socket.on('status', function (data) {
             const status = Object.assign({ backend: '', gateway: '' }, data);
-            console.log(status);
             const { backend, gateway } = status;
             // 有任何一个运行中，则整体处于 运行中
-            if (backend === 'online' && gateway === 'online') {
+            if (backend === 'online') {
                 vscode.commands.executeCommand('setContext', 'backendHelper.status', 'running');
             }
-            else if (!backend && !gateway) {
+            else if (!backend) {
                 vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
             }
-            else if (backend === 'stopped' && gateway === 'stopped') {
+            else if (backend === 'stopped') {
                 vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
             }
             else {
