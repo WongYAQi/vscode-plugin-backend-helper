@@ -50,7 +50,7 @@ app.get('/gitclone/:name', function (req, res) {
     let child = (0, child_process_1.exec)('git clone ' + repo, { cwd: folder });
     child.on('exit', () => {
         sendCurrentStatus(req.params.name);
-        res.send(path.join(folder, 'logwire-backend'));
+        res.send(folder);
     });
 });
 app.get('/getFolerPath/:name', function (req, res) {
