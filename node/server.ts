@@ -104,20 +104,21 @@ app.post('/execute/:name', function (req: any, res: any) {
         if (res.some(o => o.name === 'gateway' && o.status === 'online')) {
             // 存在gateway，而且正在运行
         } else {
-            exec('pm2 delete gateway')
-            setTimeout(() => {
+            exec('pm2 delete gateway').on('exit', function () {
                 exec(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
-            }, 1000)
+            })
         }
     })
     
     exec(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
-    exec(`pm2 log ${req.params.name}_backend`, function (err, stdout, stderr) {
-        io.to(req.params.name).emit('execute.backend', stdout);
-    })
-    exec(`pm2 log gateway`, function (err, stdout, stderr) {
-        io.to(req.params.name).emit('execute.gateway', stdout);
-    })
+    setTimeout(() => {
+        exec(`pm2 log ${req.params.name}_backend`, function (err, stdout, stderr) {
+            io.to(req.params.name).emit('execute.backend', stdout);
+        })
+        exec(`pm2 log gateway`, function (err, stdout, stderr) {
+            io.to(req.params.name).emit('execute.gateway', stdout);
+        })
+    }, 1000)
     setTimeout(() => {
         sendCurrentStatus(req.params.name)
     })
