@@ -93,6 +93,7 @@ app.post('/compile/:name', function (req, res) {
 app.post('/execute/:name', function (req, res) {
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
     getCurrentStatus().then(res => {
+        console.log(res);
         if (res.some(o => o.name === 'gateway' && o.status === 'online')) {
             // 存在gateway，而且正在运行
         }
@@ -100,23 +101,15 @@ app.post('/execute/:name', function (req, res) {
             (0, child_process_1.exec)('pm2 delete gateway');
             setTimeout(() => {
                 (0, child_process_1.exec)(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
-            });
+            }, 1000);
         }
     });
     (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
-    ['backend'].forEach(element => {
-        let child2 = (0, child_process_1.exec)(`pm2 log ${req.params.name}_${element}`);
-        // let child2 = exec(`pm2 log ${req.params.name}`);
-        child2.stdout.on('data', function (data) {
-            // 如何拿到当前用户对应的 socket 对象
-            io.to(req.params.name).emit('execute.' + element, data);
-        });
-        child2.stderr.on('data', function (err) {
-            console.log('读取日志', err);
-        });
-        child2.on('exit', function () {
-            console.log('读取日志结束');
-        });
+    (0, child_process_1.exec)(`pm2 log ${req.params.name}_backend`, function (err, stdout, stderr) {
+        io.to(req.params.name).emit('execute.backend', stdout);
+    });
+    (0, child_process_1.exec)(`pm2 log gateway`, function (err, stdout, stderr) {
+        io.to(req.params.name).emit('execute.gateway', stdout);
     });
     setTimeout(() => {
         sendCurrentStatus(req.params.name);
