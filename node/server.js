@@ -82,7 +82,14 @@ app.post('/compile/:name', function (req, res) {
         let assemble = (0, child_process_1.exec)('bash build-release.sh --module="assemble"', { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend') });
         assemble.on('exit', function () {
             fs.copyFileSync('./application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/config/application-server.properties');
-            fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/config/application-gateway.properties');
+            fs.stat('/root/' + req.params.name + '/application-server.properties', function (err, stat) {
+                if (!err) {
+                    fs.copyFileSync('/root/' + req.params.name + '/application-server.properties', '/root/' + req.params.name + '/logwire-backend/build-output/backend/config/application-server.properties');
+                }
+                else {
+                    fs.copyFileSync('./application-gateway.properties', '/root/' + req.params.name + '/logwire-backend/build-output/gateway/config/application-gateway.properties');
+                }
+            });
             io.to(req.params.name).emit('status', { backend: 'stopped', gateway: 'stopped' });
             sendCurrentStatus(req.params.name);
             res.send({ code, signal });
