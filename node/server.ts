@@ -98,6 +98,8 @@ app.post('/compile/:name', function (req: any, res: any) {
 
 // 执行 java 程序，将日志以 execute.backend/execute.gateway 的注册返回
 app.post('/execute/:name', function (req: any, res: any) {
+    // 将配置文件拷贝到特定目录中
+    fs.copyFileSync('/root/' + req.params.name + '/logwire-backend/build-output/backend/config/application-server.properties', '/root/' + req.params.name + '/application-server.properties')
     // let child = exec(`pm2 --name ${req.params.name} start test.js`);
     getCurrentStatus().then(res => {
         console.log(res)
