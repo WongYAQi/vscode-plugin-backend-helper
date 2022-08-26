@@ -119,11 +119,11 @@ app.post('/execute/:name', function (req: any, res: any) {
         exec(`pm2 log gateway`).stdout.on('data', data => {
             io.to(req.params.name).emit('execute.gateway', data);
         })
+        setTimeout(() => {
+            sendCurrentStatus(req.params.name)
+        })
         res.send();
     }, 1000)
-    setTimeout(() => {
-        sendCurrentStatus(req.params.name)
-    })
 });
 
 
@@ -152,7 +152,8 @@ server.listen(port, () => {
             console.log(result)
             result.forEach(item => {
                 if (item.name !== 'gateway') {
-                    io.to(item.name.replace(/_.*/)).emit('status', {
+                    console.log('ready to send status to: ' + item.name.replace(/_.*/, ''))
+                    io.to(item.name.replace(/_.*/, '')).emit('status', {
                         backend: item.status,
                         gateway: result.find(o => o.name === 'gateway')?.status
                     })
