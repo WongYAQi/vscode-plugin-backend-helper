@@ -103,7 +103,9 @@ app.post('/execute/:name', function (req, res) {
             });
         }
     });
-    (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
+    (0, child_process_1.exec)(`pm2 delete ${req.params.name}_backend`).on('exit', function () {
+        (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
+    });
     setTimeout(() => {
         (0, child_process_1.exec)(`pm2 log ${req.params.name}_backend`).stdout.on('data', data => {
             io.to(req.params.name).emit('execute.backend', data);
@@ -137,6 +139,7 @@ server.listen(port, () => {
     // 启动成功后，每隔3s执行一次状态的发送
     setInterval(() => {
         getCurrentStatus().then((result) => {
+            console.log(result);
             result.forEach(item => {
                 if (item.name !== 'gateway') {
                     io.to(item.name.replace(/_.*/)).emit('status', {
@@ -152,6 +155,7 @@ server.listen(port, () => {
 // ====================辅助方法=============
 function sendCurrentStatus(username) {
     getCurrentStatus(username).then(result => {
+        console.log(result);
         io.to(username).emit('status', {
             backend: result.find(o => o.name !== 'gateway')?.status,
             gateway: result.find(o => o.name === 'gateway')?.status
