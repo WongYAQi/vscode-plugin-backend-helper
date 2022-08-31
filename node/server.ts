@@ -113,12 +113,12 @@ app.post('/execute/:name', function (req: any, res: any) {
             // 存在gateway，而且正在运行
         } else {
             exec('pm2 delete gateway').on('exit', function () {
-                exec(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
+                exec(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar -Xms128m -Xmx128m -XX:+UseG1GC`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') })
             })
         }
     })
     exec(`pm2 delete ${req.params.name}_backend`).on('exit', function () {
-        exec(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
+        exec(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar -Xms128m -Xmx128m -XX:+UseG1GC`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') })
     })
     setTimeout(() => {
         exec(`pm2 log ${req.params.name}_backend`).stdout.on('data', data => {

@@ -108,12 +108,12 @@ app.post('/execute/:name', function (req, res) {
         }
         else {
             (0, child_process_1.exec)('pm2 delete gateway').on('exit', function () {
-                (0, child_process_1.exec)(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
+                (0, child_process_1.exec)(`pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar -Xms128m -Xmx128m -XX:+UseG1GC`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/gateway') });
             });
         }
     });
     (0, child_process_1.exec)(`pm2 delete ${req.params.name}_backend`).on('exit', function () {
-        (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
+        (0, child_process_1.exec)(`pm2 start --name ${req.params.name}_backend --no-autorestart java -- -jar logwire-backend-starter.jar -Xms128m -Xmx128m -XX:+UseG1GC`, { cwd: path.join(getFolderPath(req.params.name), 'logwire-backend/build-output/backend') });
     });
     setTimeout(() => {
         (0, child_process_1.exec)(`pm2 log ${req.params.name}_backend`).stdout.on('data', data => {

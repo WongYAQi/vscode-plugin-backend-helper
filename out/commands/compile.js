@@ -19,13 +19,10 @@ function compile(item) {
     }
     axios_1.default.post('http://127.0.0.1:3000/compile/' + username).then((res) => {
         (0, axios_1.default)('http://127.0.0.1:3000/getFolerPath/' + username).then(res => {
-            ;
-            ['backend', 'gateway'].forEach(target => {
-                const properties = target === 'backend' ? 'application-server.properties' : 'application-gateway.properties';
-                const path2 = path.join(res.data, 'logwire-backend', 'build-output', target, 'config', properties);
-                vscode.window.showTextDocument(vscode.Uri.file(path2));
-                vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
-            });
+            vscode.commands.executeCommand('setContext', 'backendHelper.status', 'stopped');
+            const properties = 'application-server.properties';
+            const path2 = path.join(res.data, 'logwire-backend', 'build-output', 'backend', 'config', properties);
+            vscode.window.showTextDocument(vscode.Uri.file(path2));
         });
     });
     // 删除以前的看板
