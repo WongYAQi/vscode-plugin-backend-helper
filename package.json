@@ -2,109 +2,12 @@
   "name": "vscode-plugin-backend-helper",
   "displayName": "vscode-plugin-backend-helper",
   "description": "",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "publisher": "WongYAQi",
-  "engines": {
-    "vscode": "^1.67.0"
-  },
-  "categories": [
-    "Other"
-  ],
   "license": "MIT",
-  "main": "./out/extension.js",
-  "activationEvents": [
-    "onView:backendhelper"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/WongYAQi/vscode-plugin-backend-helper.git"
-  },
-  "contributes": {
-    "commands": [
-      {
-        "command": "backendhelper.compile",
-        "title": "编译",
-        "icon": {
-          "light": "assets/compile.svg",
-          "dark": "assets/compile.svg"
-        }
-      },
-      {
-        "command": "backendhelper.execute",
-        "title": "运行",
-        "icon": {
-          "light": "assets/execute.svg",
-          "dark": "assets/execute.svg"
-        }
-      },
-      {
-        "command": "backendhelper.stop",
-        "title": "停止",
-        "icon": {
-          "light": "assets/stop.svg",
-          "dark": "assets/stop.svg"
-        }
-      },
-      {
-        "command": "backendhelper.loading",
-        "title": "加载中",
-        "icon": {
-          "light": "assets/loading.svg",
-          "dark": "assets/loading.svg"
-        }
-      },
-      {
-        "command": "backend.refresh",
-        "title": "刷新",
-        "icon": {
-          "light": "assets/refresh.svg",
-          "dark": "assets/refresh.svg"
-        }
-      }
-    ],
-    "viewsWelcome": [
-      {
-        "view": "backendhelper",
-        "contents": "No User Infomation, Please Enter your name\n[Enter Name](command:enterUserName)"
-      }
-    ],
-    "views": {
-      "explorer": [
-        {
-          "id": "backendhelper",
-          "name": "运维页面"
-        }
-      ]
-    },
-    "menus": {
-      "view/title": [
-        {
-          "command": "backend.refresh",
-          "group": "navigation",
-          "when": "view == backendhelper"
-        },
-        {
-          "command": "backendhelper.compile",
-          "group": "navigation",
-          "when": "view == backendhelper && backendHelper.status == 'stopped'"
-        },
-        {
-          "command": "backendhelper.execute",
-          "group": "navigation",
-          "when": "view == backendhelper && backendHelper.status == 'stopped'"
-        },
-        {
-          "command": "backendhelper.stop",
-          "group": "navigation",
-          "when": "view == backendhelper && backendHelper.status == 'running'"
-        },
-        {
-          "command": "backendhelper.loading",
-          "group": "navigation",
-          "when": "view == backendhelper && backendHelper.status == 'loading'"
-        }
-      ]
-    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
@@ -114,21 +17,8 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
   },
-  "devDependencies": {
-    "@types/vscode": "=1.67.0",
-    "@types/glob": "^7.2.0",
-    "@types/mocha": "^9.1.1",
-    "@types/node": "16.x",
-    "@typescript-eslint/eslint-plugin": "^5.31.0",
-    "@typescript-eslint/parser": "^5.31.0",
-    "eslint": "^8.20.0",
-    "glob": "^8.0.3",
-    "mocha": "^10.0.0",
-    "typescript": "^4.7.4",
-    "@vscode/test-electron": "^2.1.5"
-  },
+  "devDependencies": {},
   "dependencies": {
-    "axios": "^0.27.2",
-    "socket.io-client": "^4.5.1"
+    "typescript": "^4.8.4"
   }
 }
