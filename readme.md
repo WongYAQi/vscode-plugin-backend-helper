@@ -1,15 +1,24 @@
-logwire 开发工具
+# Logwire Development 开发工具
 
-### v0.2.0
-平台 + 工作区的模式，工作区是每个开发者单独的镜像容器，每个开发者的代码、java 服务运行在各自的容器中。平台也是一个容器，提供 web 页面，提供验证、创建工作区(容器)、编译运行等流程
+## 平台部署
+在 `192.168.0.4` 服务器上，创建 `node` 容器，并暴露主机端口 `-p 25555:25555`，并在容器中执行
 
-平台端：node + vue，使用 `dockerode` 模块完成与宿主机镜像的交互  
-工作区：code-server + node + java  
-* `code-server`: 文件编辑  
-* `node`: 请求交互  
-* `java`: 打包、运行 logwire 后端服务  
+> cd /var
+> git clone https://github.com/WongYAQi/vscode-plugin-backend-helper.git
+> cd vscode-plugin-backend-helper
 
-### v0.1.0
-v0.1 版本中，采用 vscode web 编辑器作为整个系统运行的载体，完成文本编辑、服务打包运行、显示日志等行为
+然后切换 `dev` 分支，执行
 
-试运行后发现，不同人员上手程度较高，难以理解如何使用
+```bash
+npm install
+npm run build
+```
+
+执行完成后，进入 `src/platform/node` 目录，执行 node 服务
+
+```bash
+cd src/platform/node
+node main.js
+```
+
+启动后，可以在个人电脑上访问 `http://192.168.0.4:25555` 打开网页，根据网页指示操作
