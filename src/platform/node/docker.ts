@@ -35,10 +35,20 @@ class WindowDocker extends Docker {
   }
 }
 
+class LinuxDocker extends Docker {
+  override request<T = any>(url: string): Promise<AxiosResponse<T>> {
+    return axios('http://192.168.0.190:2375' + url)
+  }
+  override getContainers() {
+    let docker1 = new Dockerode({ host: '192.168.0.190', port: 2375 })
+    return docker1.listContainers()
+  }
+}
+
 export function createDockerFactory () {
   if (os.platform() === 'win32') {
     return new WindowDocker()
   } else {
-    return undefined
+    return new LinuxDocker()
   }
 }
