@@ -1,0 +1,1 @@
+import './platform/node/main'
