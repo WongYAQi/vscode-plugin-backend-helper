@@ -18,7 +18,10 @@ class Docker {
     return this.docker.listContainers()
   }
   createContainer () {
-
+    this.docker.createContainer({
+      name: 'logwire_backend_helper_node:' + 'username',
+      Image: 'node:16',
+    })
   }
   execContainerCommand () {
 

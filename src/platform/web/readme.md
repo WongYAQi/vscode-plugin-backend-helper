@@ -1,9 +1,24 @@
-平台端 web 服务
+# web
 
-### todo-list
+## Project setup
+```
+npm install
+```
 
-* [ ] 原型
-* [ ] 输入用户名
-* [ ] 查看工作区状态
-* [ ] 打开代码编辑器
-* [ ] GIT 管理
+### Compiles and hot-reloads for development
+```
+npm run serve
+```
+
+### Compiles and minifies for production
+```
+npm run build
+```
+
+### Lints and fixes files
+```
+npm run lint
+```
+
+### Customize configuration
+See [Configuration Reference](https://cli.vuejs.org/config/).
