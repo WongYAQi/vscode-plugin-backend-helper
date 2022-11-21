@@ -9,17 +9,17 @@
 import Dockerode from 'dockerode'
 const os = require('os')
 class Docker {
-  host = 'host.docker.internal'
   docker: Dockerode
-  constructor () {
-    this.docker = new Dockerode({ host: this.host, port: 2375 })
+  constructor (host = 'host.docker.internal') {
+    this.docker = new Dockerode({ host: host, port: 2375 })
   }
   getContainers () {
     return this.docker.listContainers()
   }
-  createContainer () {
-    this.docker.createContainer({
-      name: 'logwire_backend_helper_node:' + 'username',
+  createContainer (username: string) {
+    return this.docker.createContainer({
+      name: 'logwire_backend_helper_node_' + username,
+      "Tty": true,
       Image: 'node:16',
     })
   }
@@ -29,12 +29,14 @@ class Docker {
 }
 
 class DevDocker extends Docker {
+  constructor () {
+    super('localhost')
+  }
 }
 
 class ProductionDocker extends Docker {
-  host = '192.168.0.4'
   constructor () {
-    super()
+    super('192.168.0.4')
   }
 }
 

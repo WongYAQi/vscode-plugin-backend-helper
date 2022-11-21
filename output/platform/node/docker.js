@@ -14,16 +14,16 @@ exports.createDockerFactory = void 0;
 const dockerode_1 = __importDefault(require("dockerode"));
 const os = require('os');
 class Docker {
-    constructor() {
-        this.host = 'host.docker.internal';
-        this.docker = new dockerode_1.default({ host: this.host, port: 2375 });
+    constructor(host = 'host.docker.internal') {
+        this.docker = new dockerode_1.default({ host: host, port: 2375 });
     }
     getContainers() {
         return this.docker.listContainers();
     }
-    createContainer() {
-        this.docker.createContainer({
-            name: 'logwire_backend_helper_node:' + 'username',
+    createContainer(username) {
+        return this.docker.createContainer({
+            name: 'logwire_backend_helper_node_' + username,
+            "Tty": true,
             Image: 'node:16',
         });
     }
@@ -31,11 +31,13 @@ class Docker {
     }
 }
 class DevDocker extends Docker {
+    constructor() {
+        super('localhost');
+    }
 }
 class ProductionDocker extends Docker {
     constructor() {
-        super();
-        this.host = '192.168.0.4';
+        super('192.168.0.4');
     }
 }
 function createDockerFactory() {
