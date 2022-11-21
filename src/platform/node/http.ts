@@ -40,35 +40,33 @@ app.get('/api/getProjectInfo', isAuthenticated, function (req, res) {
 
 })
 // API.3 初始化项目, 将异常打印到前端
-app.post('/api/installProject', isAuthenticated, function (req, res) {
-  let docker = createDockerFactory()
-  docker.createContainer(req.session.user as string).then(container => {
-    container.start(function (err, data) {
-      container.exec({
-        Cmd: ['adsasd', 'clone', 'https://github.com/WongYAQi/vscode-plugin-backend-helper.git'],
-        AttachStdout: true,
-        AttachStderr: true,
-        WorkingDir: '/var'
-      }, function (err, exec) {
-        if (!err) {
-          exec?.start({ Tty: true }, function (err, result) {
-            result?.on('data', data => console.log('data is', data.toString()))
-            result?.on('error', err => console.log('err is', err.message))
-            result?.on('end', () => {
-              exec.inspect(function (err, info) {
-                console.log(info)
-              })
-            })
-          })
-        }
-      })
-      if (err) {
-        res.sendStatus(500)
-      } else {
-        res.sendStatus(200)
-      }
-    })
-  })
+app.post('/api/installProject', isAuthenticated, async function (req, res) {
+  try {
+    let docker = createDockerFactory()
+    // 创建 node 容器
+    let container = await docker.checkAndCreateContainer({name: req.session.user as string + '.node', img: 'node:16'})
+    let data = await container.start()
+    // 克隆后端仓库
+    await docker.execContainerCommand({ container, cmd: 'git clone https://github.com/WongYAQi/vscode-plugin-backend-helper.git', dir: '/var' })
+    // 更改源
+    await docker.appendFile({ container, path: '/etc/apt/sources.list', text: 'deb http://security.debian.org/debian-security stretch/updates main' })
+    // 安装 openjdk
+    await docker.execContainerCommand({ container, cmd: 'apt-get install openjdk-8-jdk', dir: '' })
+    // 安装 maven
+    await docker.execContainerCommand({ container, cmd: 'apt-get install maven', dir: '' })
+    // 移动 maven 的 setting.xml
+    // 安装 code-server
+    // 安装 nginx
+    // 更新 nginx 配置文件信息
+
+    // 检查并创建 postgress 容器
+    // 检查并创建 redis 容器
+    // 检查并创建 zookeeper 容器
+
+    res.sendStatus(200)
+  } catch (err) {
+    res.sendStatus(500)
+  }
 })
 // API.4 运行项目
 // API.5 停止项目

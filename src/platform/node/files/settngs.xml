@@ -1,0 +1,37 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+    http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <mirrors>
+        <mirror>
+            <id>nexus.grea.member</id>
+            <mirrorOf>*</mirrorOf>
+            <url>https://nexus.logwire.cn/repository/member/</url>
+        </mirror>
+    </mirrors>
+
+
+    <servers>
+        <server>
+            <id>nexus.grea.member</id>
+            <username>ivan.yang</username>
+            <password>yf541277270</password>
+        </server>
+        <server>
+            <id>nexus.grea.releases</id>
+            <username>ivan.yang</username>
+            <password>yf541277270</password>
+        </server>
+        <server>
+            <id>nexus.grea.snapshots</id>
+            <username>ivan.yang</username>
+            <password>yf541277270</password>
+        </server>
+        <server>
+            <id>nexus.grea.thirdparty</id>
+            <username>ivan.yang</username>
+            <password>yf541277270</password>
+        </server>
+    </servers>
+</settings>

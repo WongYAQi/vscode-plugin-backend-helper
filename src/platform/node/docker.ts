@@ -13,18 +13,44 @@ class Docker {
   constructor (host = 'host.docker.internal') {
     this.docker = new Dockerode({ host: host, port: 2375 })
   }
-  getContainers () {
-    return this.docker.listContainers()
+  getContainers (filter: {}) {
+    return this.docker.listContainers(filter)
   }
-  createContainer (username: string) {
+  async checkAndCreateContainer ({ name, img }: { name: string, img: string }) {
+    let targetContainerName = 'logwire_backend_helper.' + name
+    let containers = await this.getContainers({ filter: `{"name": ["${targetContainerName}"]}`})
+    if (containers.length > 0) return containers[0]
     return this.docker.createContainer({
-      name: 'logwire_backend_helper_node_' + username,
+      name: targetContainerName,
       "Tty": true,
-      Image: 'node:16',
+      Image: img,
     })
   }
-  execContainerCommand () {
+  async execContainerCommand ({ container, cmd, dir }: {container: Dockerode.Container, cmd: string | string[], dir: string }) {
+    let exec = await container.exec({
+      Cmd: cmd instanceof Array ? cmd : cmd.split(' '),
+      AttachStdout: true,
+      AttachStderr: true,
+      WorkingDir: dir
+    })
+    let result = await exec?.start({ Tty: true })
+    return new Promise<void>((resolve, reject) => {
+      result?.on('end', async () => {
+        let info = await exec.inspect()
+        if (info?.ExitCode) {
+          reject(info.ExitCode.toString())
+        } else {
+          resolve()
+        }
+      })
+    })
+  }
 
+  async writeFile ({ container, path, text }: { container: Dockerode.Container, path: string, text: string }) {
+    await this.execContainerCommand({ container, cmd: ['echo', text, '>', path], dir: '' })
+  }
+  async appendFile({ container, path, text }: { container: Dockerode.Container, path: string, text: string }) {
+    await this.execContainerCommand({ container, cmd: ['echo', text, '>>', path], dir: '' })
   }
 }
 
