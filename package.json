@@ -12,7 +12,8 @@
   "scripts": {
     "vscode:prepublish": "yarn run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "watch": "cp -r ./src/platform/node/files ./output/platform/node && tsc -watch -p ./",
+    "dev": "node ./output/platform/node/http.js",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"

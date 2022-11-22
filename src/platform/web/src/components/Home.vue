@@ -20,7 +20,8 @@ export default {
   },
   methods: {
     handleInstall () {
-      axios.post('/api/installProject')
+      // axios.post('/api/installProject')
+      axios.post('/api/start')
     }
   }
 }

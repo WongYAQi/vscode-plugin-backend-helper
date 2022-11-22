@@ -7,38 +7,69 @@
  */
 
 import Dockerode from 'dockerode'
+import { resolve } from 'path'
 const os = require('os')
 class Docker {
   docker: Dockerode
   constructor (host = 'host.docker.internal') {
     this.docker = new Dockerode({ host: host, port: 2375 })
   }
-  getContainers (filter: {}) {
-    return this.docker.listContainers(filter)
-  }
-  async checkAndCreateContainer ({ name, img }: { name: string, img: string }) {
+  async checkAndCreateContainer ({ name, img, env }: { name: string, img: string, env?: string[] }) {
     let targetContainerName = 'logwire_backend_helper.' + name
-    let containers = await this.getContainers({ filter: `{"name": ["${targetContainerName}"]}`})
-    if (containers.length > 0) return containers[0]
-    return this.docker.createContainer({
-      name: targetContainerName,
-      "Tty": true,
-      Image: img,
-    })
+      let containers = await this.docker.listContainers({ filters: `{ "name": ["${targetContainerName}"] }` })
+      if (containers.length) {
+        let container = await this.docker.getContainer(containers[0].Id)
+        return container
+      } else {
+        let images = await this.docker.listImages({ filters: `{ "reference": ["${img}"] }` })
+        if (images.length === 0) {
+          await new Promise<void>((resolve, reject) => {
+            this.docker.pull(img, (err: any, stream: any) => {
+              this.docker.modem.followProgress(stream, onFinished, onProgress);
+              function onFinished(err: any, output: any) {
+                  if (!err) {
+                    resolve()
+                  } else {
+                    console.log(err);
+                    reject(err)
+                  }
+              }
+              function onProgress(event: any) {
+              }
+            })
+          })
+        } 
+        return this.docker.createContainer({
+          name: targetContainerName,
+          "Tty": true,
+          Image: img,
+          Env: env
+        })
+      }
   }
-  async execContainerCommand ({ container, cmd, dir }: {container: Dockerode.Container, cmd: string | string[], dir: string }) {
+  async startContainer({ container }: { container: Dockerode.Container }) {
+    let info = await container.inspect()
+    if (info.State.Running) {
+    } else {
+      await container.start()
+    }
+    return container
+  }
+  async execContainerCommand ({ container, cmd, dir }: {container: Dockerode.Container, cmd: string | string[], dir?: string }) {
     let exec = await container.exec({
       Cmd: cmd instanceof Array ? cmd : cmd.split(' '),
       AttachStdout: true,
       AttachStderr: true,
       WorkingDir: dir
     })
-    let result = await exec?.start({ Tty: true })
+    let result = await exec?.start({})
     return new Promise<void>((resolve, reject) => {
+      result?.on('data', chunk => console.log('command is', cmd, ' and log is', chunk.toString()))
+      result?.on('error', error => console.log('command is', cmd, ' and error is', error))
       result?.on('end', async () => {
         let info = await exec.inspect()
         if (info?.ExitCode) {
-          reject(info.ExitCode.toString())
+          reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode })
         } else {
           resolve()
         }
@@ -47,10 +78,10 @@ class Docker {
   }
 
   async writeFile ({ container, path, text }: { container: Dockerode.Container, path: string, text: string }) {
-    await this.execContainerCommand({ container, cmd: ['echo', text, '>', path], dir: '' })
+    await this.execContainerCommand({ container, cmd: ['bash', '-c', 'echo ' + text + ' > ' + path] })
   }
   async appendFile({ container, path, text }: { container: Dockerode.Container, path: string, text: string }) {
-    await this.execContainerCommand({ container, cmd: ['echo', text, '>>', path], dir: '' })
+    await this.execContainerCommand({ container, cmd: ['bash', '-c', 'echo ' + text + ' >> ' + path] })
   }
 }
 

@@ -16,7 +16,7 @@ export default {
   },
   data () {
     return {
-      username: ''
+      username: '1234'
     }
   },
   methods: {
