@@ -7,6 +7,8 @@
  */
 
 import Dockerode from 'dockerode'
+import { chmod, createReadStream, createWriteStream, mkdirSync, readFileSync, rmdirSync, rmSync } from 'fs'
+const tar = require('tar-fs')
 import { resolve } from 'path'
 const os = require('os')
 class Docker {
@@ -14,9 +16,9 @@ class Docker {
   constructor (host = 'host.docker.internal') {
     this.docker = new Dockerode({ host: host, port: 2375 })
   }
-  async checkAndCreateContainer ({ name, img, env }: { name: string, img: string, env?: string[] }) {
+  async checkAndCreateContainer ({ name, img, env, port, cmd, expose }: { name: string, img: string, env?: string[], port?: Record<string, any>, cmd?: string[], expose?: Record<string, any> }) {
     let targetContainerName = 'logwire_backend_helper.' + name
-      let containers = await this.docker.listContainers({ filters: `{ "name": ["${targetContainerName}"] }` })
+      let containers = await this.docker.listContainers({ filters: JSON.stringify({ status: ['created', 'restarting', 'running', 'removing', 'paused', 'exited', 'dead' ], name: [targetContainerName] }) })
       if (containers.length) {
         let container = await this.docker.getContainer(containers[0].Id)
         return container
@@ -43,7 +45,12 @@ class Docker {
           name: targetContainerName,
           "Tty": true,
           Image: img,
-          Env: env
+          Env: env,
+          Cmd: cmd,
+          ExposedPorts: expose,
+          HostConfig: {
+            PortBindings: port || {}
+          }
         })
       }
   }
@@ -55,7 +62,7 @@ class Docker {
     }
     return container
   }
-  async execContainerCommand ({ container, cmd, dir }: {container: Dockerode.Container, cmd: string | string[], dir?: string }) {
+  async execContainerCommand ({ container, cmd, dir, quiet }: {container: Dockerode.Container, cmd: string | string[], dir?: string, quiet?: boolean }) {
     let exec = await container.exec({
       Cmd: cmd instanceof Array ? cmd : cmd.split(' '),
       AttachStdout: true,
@@ -64,12 +71,12 @@ class Docker {
     })
     let result = await exec?.start({})
     return new Promise<void>((resolve, reject) => {
-      result?.on('data', chunk => console.log('command is', cmd, ' and log is', chunk.toString()))
-      result?.on('error', error => console.log('command is', cmd, ' and error is', error))
+      result?.on('data', chunk => !quiet && console.log(chunk.toString()))
+      result?.on('error', error => console.log('[' + cmd + '] [error] ' + error))
       result?.on('end', async () => {
         let info = await exec.inspect()
         if (info?.ExitCode) {
-          reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode })
+          reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode, exitcode: info.ExitCode })
         } else {
           resolve()
         }
@@ -82,6 +89,28 @@ class Docker {
   }
   async appendFile({ container, path, text }: { container: Dockerode.Container, path: string, text: string }) {
     await this.execContainerCommand({ container, cmd: ['bash', '-c', 'echo ' + text + ' >> ' + path] })
+  }
+  async getFile ({ container, path }: { container: Dockerode.Container, path: string }) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let readstream = await container.getArchive({ path })
+        let tempFilePath = './temp_' + Math.random() + '.tar'
+        let tempUnpackFolder = tempFilePath.replace('.tar', '')
+        let tempUnpackFile = tempUnpackFolder + '/' + path.replace(/.*\//, '')
+        mkdirSync(tempUnpackFolder)
+        let writestream = createWriteStream(tempFilePath)
+        readstream.pipe(writestream).on('finish', () => {
+          createReadStream(tempFilePath).pipe(tar.extract(tempUnpackFolder)).on('finish', () => {
+            let content = readFileSync(tempUnpackFile, { encoding: 'utf-8' })
+            rmSync(tempFilePath)
+            rmSync(tempUnpackFolder, { recursive: true, force: true })
+            resolve(content)
+          })
+        })
+      } catch (err) {
+        reject(err)
+      }
+    })
   }
 }
 

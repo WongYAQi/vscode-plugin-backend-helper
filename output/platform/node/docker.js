@@ -12,14 +12,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createDockerFactory = void 0;
 const dockerode_1 = __importDefault(require("dockerode"));
+const fs_1 = require("fs");
+const tar = require('tar-fs');
 const os = require('os');
 class Docker {
     constructor(host = 'host.docker.internal') {
         this.docker = new dockerode_1.default({ host: host, port: 2375 });
     }
-    async checkAndCreateContainer({ name, img, env }) {
+    async checkAndCreateContainer({ name, img, env, port, cmd, expose }) {
         let targetContainerName = 'logwire_backend_helper.' + name;
-        let containers = await this.docker.listContainers({ filters: `{ "name": ["${targetContainerName}"] }` });
+        let containers = await this.docker.listContainers({ filters: JSON.stringify({ status: ['created', 'restarting', 'running', 'removing', 'paused', 'exited', 'dead'], name: [targetContainerName] }) });
         if (containers.length) {
             let container = await this.docker.getContainer(containers[0].Id);
             return container;
@@ -48,7 +50,12 @@ class Docker {
                 name: targetContainerName,
                 "Tty": true,
                 Image: img,
-                Env: env
+                Env: env,
+                Cmd: cmd,
+                ExposedPorts: expose,
+                HostConfig: {
+                    PortBindings: port || {}
+                }
             });
         }
     }
@@ -61,7 +68,7 @@ class Docker {
         }
         return container;
     }
-    async execContainerCommand({ container, cmd, dir }) {
+    async execContainerCommand({ container, cmd, dir, quiet }) {
         let exec = await container.exec({
             Cmd: cmd instanceof Array ? cmd : cmd.split(' '),
             AttachStdout: true,
@@ -70,12 +77,12 @@ class Docker {
         });
         let result = await exec?.start({});
         return new Promise((resolve, reject) => {
-            result?.on('data', chunk => console.log('command is', cmd, ' and log is', chunk.toString()));
-            result?.on('error', error => console.log('command is', cmd, ' and error is', error));
+            result?.on('data', chunk => !quiet && console.log(chunk.toString()));
+            result?.on('error', error => console.log('[' + cmd + '] [error] ' + error));
             result?.on('end', async () => {
                 let info = await exec.inspect();
                 if (info?.ExitCode) {
-                    reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode });
+                    reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode, exitcode: info.ExitCode });
                 }
                 else {
                     resolve();
@@ -88,6 +95,29 @@ class Docker {
     }
     async appendFile({ container, path, text }) {
         await this.execContainerCommand({ container, cmd: ['bash', '-c', 'echo ' + text + ' >> ' + path] });
+    }
+    async getFile({ container, path }) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                let readstream = await container.getArchive({ path });
+                let tempFilePath = './temp_' + Math.random() + '.tar';
+                let tempUnpackFolder = tempFilePath.replace('.tar', '');
+                let tempUnpackFile = tempUnpackFolder + '/' + path.replace(/.*\//, '');
+                (0, fs_1.mkdirSync)(tempUnpackFolder);
+                let writestream = (0, fs_1.createWriteStream)(tempFilePath);
+                readstream.pipe(writestream).on('finish', () => {
+                    (0, fs_1.createReadStream)(tempFilePath).pipe(tar.extract(tempUnpackFolder)).on('finish', () => {
+                        let content = (0, fs_1.readFileSync)(tempUnpackFile, { encoding: 'utf-8' });
+                        (0, fs_1.rmSync)(tempFilePath);
+                        (0, fs_1.rmSync)(tempUnpackFolder, { recursive: true, force: true });
+                        resolve(content);
+                    });
+                });
+            }
+            catch (err) {
+                reject(err);
+            }
+        });
     }
 }
 class DevDocker extends Docker {
