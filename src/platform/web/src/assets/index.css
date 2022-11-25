@@ -1,0 +1,36 @@
+html, body{
+  margin: 0;
+  padding: 0;
+}
+.content{
+  background-color: #EFEFEF;
+  overflow: hidden;
+  height: 100%;
+  padding: 24px;
+}
+.content .container{
+  border: 1px solid #BBBBBB;
+  background-color: #ffffff;
+  margin: 10px;
+}
+.content .container .form{
+  width: 100%;
+}
+.content .container .form .form-item {
+  width: 100%;
+}
+.content .container .form .form-item:nth-child(n+1) {
+  margin-top: 40px;
+}
+.content .container .form .form-item .form-item__label label{
+  font-size: 24px;
+  width: 100%;
+  display: inline-block;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.content .container .form .form-item .form-item__label p{
+  font-size: 14px;
+  margin: 0 0 8px 0 ;
+}

@@ -1,1 +1,1 @@
-{"gitUserEmail":"wongyaqi@greaconsulting.com"}
+{"InstallSteps":["创建 node 容器","创建 postgres 容器","创建 redis 容器","创建 zookeeper 容器","创建 rocketmq serv 容器","创建 rocketmq broker 容器"]}

@@ -77,12 +77,20 @@ class Docker {
         });
         let result = await exec?.start({});
         return new Promise((resolve, reject) => {
-            result?.on('data', chunk => !quiet && console.log(chunk.toString()));
-            result?.on('error', error => console.log('[' + cmd + '] [error] ' + error));
+            let logs = '';
+            result?.on('data', chunk => {
+                !quiet && console.log('[info] ' + chunk.toString());
+                logs += chunk.toString();
+                logs = logs.substring(logs.length - 1200);
+            });
+            result?.on('error', error => {
+                console.log('[error] ' + error);
+                logs += error.message + '\n' + error.stack;
+            });
             result?.on('end', async () => {
                 let info = await exec.inspect();
                 if (info?.ExitCode) {
-                    reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode, exitcode: info.ExitCode });
+                    reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode, exitcode: info.ExitCode, logs });
                 }
                 else {
                     resolve();

@@ -21,14 +21,14 @@ function sleep(ms) {
 exports.sleep = sleep;
 function getUserConfig(username, config) {
     let jsonPath = path.resolve(__dirname, './database/' + username + '.json');
-    let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' });
+    let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' }) || '{}';
     let json = JSON.parse(jsonStr) || {};
     return json[config];
 }
 exports.getUserConfig = getUserConfig;
 function setUserConfig(username, config, value) {
     let jsonPath = path.resolve(__dirname, './database/' + username + '.json');
-    let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' });
+    let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' }) || '{}';
     let json = JSON.parse(jsonStr) || {};
     json[config] = value;
     fs.writeFileSync(jsonPath, JSON.stringify(json), { encoding: 'utf-8' });

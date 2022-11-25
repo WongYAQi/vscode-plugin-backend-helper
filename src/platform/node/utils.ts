@@ -23,7 +23,7 @@ export function getUserConfig (username: string, config: string) {
   return json[config]
 }
 
-export function setUserConfig (username: string, config: string, value: string) {
+export function setUserConfig (username: string, config: string, value: any) {
   let jsonPath = path.resolve(__dirname, './database/' + username + '.json')
   let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' })
   let json = JSON.parse(jsonStr) || {}
