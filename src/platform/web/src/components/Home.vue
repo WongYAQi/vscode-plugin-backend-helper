@@ -7,10 +7,10 @@
         <p>{{ statusLabel }}</p>
       </div>
       <div class='row'>
-        <button v-if='status === "null"' @click='handleInstall'>初始化</button>
-        <button v-if='status !== "null"' @click='handleCompile'>编译</button>
-        <button v-if='status === "created"' @click='handleExecute'>运行</button>
-        <button v-else-if='status === "running"' @click='handleStop'>停止</button>
+        <button v-if='status === "null"' :disabled='loading' @click='handleInstall'>初始化</button>
+        <button v-if='status !== "null"' :disabled='loading' @click='handleCompile'>编译</button>
+        <button v-if='status === "created"' :disabled='loading' @click='handleExecute'>运行</button>
+        <button v-else-if='status === "running"' :disabled='loading' @click='handleStop'>停止</button>
       </div>
     </div>
     <div class='main'>
@@ -19,10 +19,10 @@
           常用工具
         </div>
         <div class='row'>
-          <div class=''>
+          <div class='' @click='handleOpenVscode'>
             Vscode Web
           </div>
-          <div class=''>
+          <div class='' @click='handleOpenConsole'>
             Console Web
           </div>
         </div>
@@ -52,6 +52,7 @@ export default {
   data () {
     return {
       status: 'null', // null | created | stoped | running | 
+      loading: false,
       logs: []
     }
   },
@@ -84,20 +85,44 @@ export default {
         this.logs.unshift(errObj.logs)
       }
     })
+
+    this.handleGetStatus()
   },
   methods: {
+    handleGetStatus () {
+      axios.get('/api/getProjectInfo').then(res => {
+        this.status = res.data.status || 'null'
+      })
+    },
     handleInstall () {
       this.logs = []
-      axios.post('/api/installProject')
+      this.loading = true
+      axios.post('/api/installProject').then(() => {
+        this.handleGetStatus()
+      }).then(() => {
+        this.loading = false
+      })
     },
     handleCompile () {
-      axios.post('/api/backend/compile')
+      this.loading = true
+      axios.post('/api/backend/compile').then(() => {
+        this.loading = false
+      })
     },
     handleExecute () {
-      axios.post('/api/backend/execute')
+      this.loading = true
+      axios.post('/api/backend/execute').then(() => {
+        this.loading = false
+      })
     },
     handleStop () {
 
+    },
+    handleOpenConsole () {
+      window.open(window.location.protocol + '//' + window.location.hostname + ':30000/wetty', '_blank')
+    },
+    handleOpenVscode () {
+      window.open(window.location.protocol + '//' + window.location.hostname + ':30000/?folder=/var', '_blank')
     }
   }
 }

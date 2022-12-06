@@ -85,7 +85,6 @@ class Docker {
       })
       result?.on('end', async () => {
         let info = await exec.inspect()
-        console.log(info)
         if (info?.ExitCode) {
           reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode, exitcode: info.ExitCode, logs })
         } else {
@@ -101,7 +100,7 @@ class Docker {
   async appendFile({ container, path, text }: { container: Dockerode.Container, path: string, text: string }) {
     await this.execContainerCommand({ container, cmd: ['bash', '-c', 'echo ' + text + ' >> ' + path] })
   }
-  async getFile ({ container, path }: { container: Dockerode.Container, path: string }) {
+  async getFile ({ container, path }: { container: Dockerode.Container, path: string }): Promise<string> {
     return new Promise(async (resolve, reject) => {
       try {
         let readstream = await container.getArchive({ path })

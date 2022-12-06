@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setUserConfig = exports.getUserConfig = exports.sleep = exports.readFile = void 0;
+exports.setUserConfig = exports.getUserConfig = exports.getUserAllConfigs = exports.sleep = exports.readFile = void 0;
 const fs = require("fs");
 const path = require("path");
 /**
@@ -19,6 +19,13 @@ function sleep(ms) {
     });
 }
 exports.sleep = sleep;
+function getUserAllConfigs(username) {
+    let jsonPath = path.resolve(__dirname, './database/' + username + '.json');
+    let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' });
+    let json = JSON.parse(jsonStr) || {};
+    return json;
+}
+exports.getUserAllConfigs = getUserAllConfigs;
 function getUserConfig(username, config) {
     let jsonPath = path.resolve(__dirname, './database/' + username + '.json');
     let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' });

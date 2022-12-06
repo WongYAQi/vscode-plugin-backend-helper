@@ -68,7 +68,6 @@ app.post('/api/login', function (req, res) {
                 res.sendStatus(500);
             }
             else {
-                (0, fs_1.writeFileSync)(path.resolve(__dirname, './database/' + req.body.username + '.json'), '{}');
                 res.sendStatus(200);
             }
         });
@@ -76,6 +75,9 @@ app.post('/api/login', function (req, res) {
 });
 // API.2 获取当前 username 的信息, 包括：服务运行状态
 app.get('/api/getProjectInfo', isAuthenticated, function (req, res) {
+    let username = req.session.user || '1234';
+    let configs = (0, utils_1.getUserAllConfigs)(username);
+    res.send(configs);
 });
 // API.3 初始化项目, 将异常打印到前端
 app.post('/api/installProject', isAuthenticated, async function (req, res) {
@@ -88,6 +90,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
             container = await docker.checkAndCreateContainer({ name: username + '.node', img: 'node:16', expose: { '8080/tcp': {} }, port: { '8080/tcp': [{ HostPort: '30000' }] } });
             await docker.startContainer({ container });
         });
+        (0, fs_1.writeFileSync)(path.resolve(__dirname, './database/' + username + '.json'), '{}');
         await log_1.default.run(username, '创建 postgres 容器', async () => {
             let postgres = await docker.checkAndCreateContainer({ name: 'postgres', img: 'postgres:12', env: ["POSTGRES_PASSWORD=postgres"], port: { '5432/tcp': [{ HostPort: '30001' }] } });
             let info = await postgres.inspect();
@@ -127,10 +130,14 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
         });
         await log_1.default.run(username, '克隆仓库', async () => {
             await docker.execContainerCommand({ container, cmd: ['git', 'config', '--global', 'core.sshCommand', 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'] });
+            await docker.execContainerCommand({ container, cmd: 'rm -rf /var/logwire-backend' });
             await docker.execContainerCommand({ container, cmd: 'git clone ssh://git@gitlab.logwire.cn:13389/logwire2/logwire-backend.git', dir: '/var' });
         });
         await log_1.default.run(username, '添加源', async () => {
-            await docker.appendFile({ container, path: '/etc/apt/sources.list', text: '\'deb http://security.debian.org/debian-security stretch/updates main\'' });
+            let txt = await docker.getFile({ container, path: '/etc/apt/sources.list' });
+            if (txt && !txt.includes('deb http://security.debian.org/debian-security stretch/updates main')) {
+                await docker.appendFile({ container, path: '/etc/apt/sources.list', text: '\'deb http://security.debian.org/debian-security stretch/updates main\'' });
+            }
         });
         await log_1.default.run(username, '更新源', async () => {
             await docker.execContainerCommand({ container, cmd: 'apt-get update' });
@@ -147,23 +154,25 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
         });
         await log_1.default.run(username, '安装 Wetty', async () => {
             try {
-                let result = await docker.execContainerCommand({ container, cmd: 'command -V wetty' });
+                await docker.execContainerCommand({ container, cmd: 'which wetty' });
             }
             catch (err) {
+                console.log(err);
                 await docker.execContainerCommand({ container, cmd: 'yarn global add wetty' });
-            }
-            finally {
-                docker.execContainerCommand({ container, cmd: 'wetty ' });
+                await docker.execContainerCommand({ container, cmd: 'useradd console' });
+                await docker.execContainerCommand({ container, cmd: 'echo -e "console\nconsole" | passwd console' });
             }
         });
         await log_1.default.run(username, '安装 code-server ', async () => {
             try {
-                await docker.execContainerCommand({ container, cmd: 'command -V code-server' });
+                let result = await docker.execContainerCommand({ container, cmd: 'which code-server' });
+                console.log(result);
             }
             catch (err) {
+                console.log(err);
                 await docker.execContainerCommand({ container, cmd: 'apt-get install -y build-essential pkg-config python3' });
                 await docker.execContainerCommand({ container, cmd: 'npm config set python python3' });
-                await docker.execContainerCommand({ container, cmd: 'npm install --global code-server --unsafe-perm' });
+                await docker.execContainerCommand({ container, cmd: 'yarn global add code-server@4.6.0' });
             }
         });
         await log_1.default.run(username, '安装 nginx ', async () => {
@@ -177,7 +186,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
             await docker.writeFile({ container, path: '/etc/nginx/nginx.conf', text: '\'' + nginxConfigText + '\'' });
         });
         await log_1.default.run(username, '启动 wetty', async () => {
-            docker.execContainerCommand({ container, cmd: 'wetty' });
+            docker.execContainerCommand({ container, cmd: 'wetty --port 3001' });
         });
         await log_1.default.run(username, '启动 code-server ', async () => {
             docker.execContainerCommand({ container, cmd: 'code-server --bind-addr 127.0.0.1:8000 --auth none' });
@@ -185,6 +194,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
         await log_1.default.run(username, '启动 nginx ', async () => {
             await docker.execContainerCommand({ container, cmd: 'nginx' });
         });
+        (0, utils_1.setUserConfig)(username, 'status', 'created');
         res.sendStatus(200);
     }
     catch (err) {
@@ -199,10 +209,13 @@ app.post('/api/backend/compile', isAuthenticated, async function (req, res) {
     try {
         let docker = (0, docker_1.createDockerFactory)();
         let username = req.session.user || '1234';
+        // 每次编译前把已有的 tenants_config 文件夹拷贝到一个地方，编译完成后，再拷贝回来
         let container = await docker.checkAndCreateContainer({ name: username + '.node', img: 'node:16', port: { '8080/tcp': [{ HostPost: '30000' }] } });
+        await docker.execContainerCommand({ container, cmd: 'mv -f build-output/backend/tenants_config/ ../tenants_config', dir: '/var/logwire-backend' });
         await docker.execContainerCommand({ container, cmd: 'bash build-release.sh --module=logwire', dir: '/var/logwire-backend' });
         await docker.execContainerCommand({ container, cmd: 'bash build-release.sh --module=assemble', dir: '/var/logwire-backend' });
         // 打包完成后，移动默认配置文件, 修改配置文件信息
+        await docker.execContainerCommand({ container, cmd: 'mv -f ../tenants_config build-output/backend/', dir: '/var/logwire-backend' });
         let gatewayText = (0, fs_1.readFileSync)(path.resolve(__dirname, './files/application-gateway.properties'), { encoding: 'utf-8' });
         await docker.writeFile({ container, path: '/var/logwire-backend/build-output/gateway/config/application-gateway.properties', text: '\'' + gatewayText + '\'' });
         let backendText = (0, fs_1.readFileSync)(path.resolve(__dirname, './files/application-server.properties'), { encoding: 'utf-8' });
@@ -227,6 +240,21 @@ app.post('/api/backend/execute', isAuthenticated, async function (req, res) {
         }
         await docker.execContainerCommand({ container, cmd: 'pm2 start --name gateway --no-autorestart java -- -jar logwire-gateway-starter.jar -Xms128m -Xmx128m -XX:+UseG1GC', dir: '/var/logwire-backend/build-output/gateway' });
         await docker.execContainerCommand({ container, cmd: `pm2 start --name backend --no-autorestart java -- -jar logwire-backend-starter.jar -Xms128m -Xmx128m -XX:+UseG1GC`, dir: '/var/logwire-backend/build-output/backend' });
+        (0, utils_1.setUserConfig)(username, 'status', 'running');
+        res.sendStatus(200);
+    }
+    catch (err) {
+        res.status(500).send(err);
+    }
+});
+app.post('/api/backend/stop', isAuthenticated, async function (req, res) {
+    try {
+        let docker = (0, docker_1.createDockerFactory)();
+        let username = req.session.user || '1234';
+        let container = await docker.checkAndCreateContainer({ name: username + '.node', img: 'node:16', port: { '8080/tcp': [{ HostPost: '30000' }] } });
+        await docker.execContainerCommand({ container, cmd: 'pm2 delete backend' });
+        await docker.execContainerCommand({ container, cmd: 'pm2 delete gateway' });
+        (0, utils_1.setUserConfig)(username, 'status', 'stopped');
         res.sendStatus(200);
     }
     catch (err) {

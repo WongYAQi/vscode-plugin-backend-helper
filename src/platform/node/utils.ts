@@ -16,6 +16,12 @@ export function sleep (ms: number) {
   })
 }
 
+export function getUserAllConfigs (username: string): Record<string, string> {
+  let jsonPath = path.resolve(__dirname, './database/' + username + '.json')
+  let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' })
+  let json = JSON.parse(jsonStr) || {}
+  return json
+}
 export function getUserConfig (username: string, config: string) {
   let jsonPath = path.resolve(__dirname, './database/' + username + '.json')
   let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' })

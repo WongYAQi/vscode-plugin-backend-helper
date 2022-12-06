@@ -91,7 +91,6 @@ class Docker {
             });
             result?.on('end', async () => {
                 let info = await exec.inspect();
-                console.log(info);
                 if (info?.ExitCode) {
                     reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode, exitcode: info.ExitCode, logs });
                 }
