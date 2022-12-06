@@ -46,7 +46,7 @@ app.post('/api/login', function (req, res) {
       if (err) {
         res.sendStatus(500)
       } else {
-        writeFileSync(path.resolve(__dirname, './database/' + req.body.username + '.json'), '')
+        writeFileSync(path.resolve(__dirname, './database/' + req.body.username + '.json'), '{}')
         res.sendStatus(200)
       }
     })
@@ -109,6 +109,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
       }
     })
 
+
     await LogUtil.run(username, '克隆仓库', async () => {
       await docker.execContainerCommand({ container, cmd: ['git', 'config' ,'--global', 'core.sshCommand', 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'] })
       await docker.execContainerCommand({ container, cmd: 'git clone ssh://git@gitlab.logwire.cn:13389/logwire2/logwire-backend.git', dir: '/var' })
@@ -129,10 +130,23 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
       let mavenSettingXml = readFileSync(path.resolve(__dirname, './files/settings.xml'), { encoding: 'utf-8' })
       await docker.writeFile({ container, path: '/etc/maven/settings.xml', text: '\'' + mavenSettingXml + '\'' })
     })
+    await LogUtil.run(username, '安装 Wetty', async () => {
+      try {
+        let result = await docker.execContainerCommand({ container, cmd: 'command -V wetty'})
+      } catch (err) {
+        await docker.execContainerCommand({ container, cmd: 'yarn global add wetty' })
+      } finally {
+        docker.execContainerCommand({ container, cmd: 'wetty '})
+      }
+    })
     await LogUtil.run(username, '安装 code-server ', async () => {
-      await docker.execContainerCommand({ container, cmd: 'apt-get install -y build-essential pkg-config python3' })
-      await docker.execContainerCommand({ container, cmd: 'npm config set python python3' })
-      await docker.execContainerCommand({ container, cmd: 'npm install --global code-server --unsafe-perm' })
+      try {
+        await docker.execContainerCommand({ container, cmd: 'command -V code-server'})
+      } catch (err) {
+        await docker.execContainerCommand({ container, cmd: 'apt-get install -y build-essential pkg-config python3' })
+        await docker.execContainerCommand({ container, cmd: 'npm config set python python3' })
+        await docker.execContainerCommand({ container, cmd: 'npm install --global code-server --unsafe-perm' })
+      }
     })
     await LogUtil.run(username, '安装 nginx ', async () => {
       await docker.execContainerCommand({ container, cmd: 'apt-get install -y nginx'})
@@ -144,6 +158,9 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
       let nginxConfigText = readFileSync(path.resolve(__dirname, './files/nginx.conf'), { encoding: 'utf-8' })
       await docker.writeFile({ container, path: '/etc/nginx/nginx.conf', text: '\'' + nginxConfigText + '\'' })
     })
+    await LogUtil.run(username, '启动 wetty', async () => {
+      docker.execContainerCommand({ container, cmd: 'wetty' })
+    })
     await LogUtil.run(username, '启动 code-server ', async () => {
       docker.execContainerCommand({ container, cmd: 'code-server --bind-addr 127.0.0.1:8000 --auth none' })
     })
@@ -153,6 +170,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
 
     res.sendStatus(200)
   } catch (err: any) {
+    console.log(err)
     let socket = getWebsocketIo()
     socket.emit('Log', '[Error]' + JSON.stringify(err))
     res.sendStatus(500)

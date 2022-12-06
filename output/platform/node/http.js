@@ -68,7 +68,7 @@ app.post('/api/login', function (req, res) {
                 res.sendStatus(500);
             }
             else {
-                (0, fs_1.writeFileSync)(path.resolve(__dirname, './database/' + req.body.username + '.json'), '');
+                (0, fs_1.writeFileSync)(path.resolve(__dirname, './database/' + req.body.username + '.json'), '{}');
                 res.sendStatus(200);
             }
         });
@@ -145,10 +145,26 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
             let mavenSettingXml = (0, fs_1.readFileSync)(path.resolve(__dirname, './files/settings.xml'), { encoding: 'utf-8' });
             await docker.writeFile({ container, path: '/etc/maven/settings.xml', text: '\'' + mavenSettingXml + '\'' });
         });
+        await log_1.default.run(username, '安装 Wetty', async () => {
+            try {
+                let result = await docker.execContainerCommand({ container, cmd: 'command -V wetty' });
+            }
+            catch (err) {
+                await docker.execContainerCommand({ container, cmd: 'yarn global add wetty' });
+            }
+            finally {
+                docker.execContainerCommand({ container, cmd: 'wetty ' });
+            }
+        });
         await log_1.default.run(username, '安装 code-server ', async () => {
-            await docker.execContainerCommand({ container, cmd: 'apt-get install -y build-essential pkg-config python3' });
-            await docker.execContainerCommand({ container, cmd: 'npm config set python python3' });
-            await docker.execContainerCommand({ container, cmd: 'npm install --global code-server --unsafe-perm' });
+            try {
+                await docker.execContainerCommand({ container, cmd: 'command -V code-server' });
+            }
+            catch (err) {
+                await docker.execContainerCommand({ container, cmd: 'apt-get install -y build-essential pkg-config python3' });
+                await docker.execContainerCommand({ container, cmd: 'npm config set python python3' });
+                await docker.execContainerCommand({ container, cmd: 'npm install --global code-server --unsafe-perm' });
+            }
         });
         await log_1.default.run(username, '安装 nginx ', async () => {
             await docker.execContainerCommand({ container, cmd: 'apt-get install -y nginx' });
@@ -160,6 +176,9 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
             let nginxConfigText = (0, fs_1.readFileSync)(path.resolve(__dirname, './files/nginx.conf'), { encoding: 'utf-8' });
             await docker.writeFile({ container, path: '/etc/nginx/nginx.conf', text: '\'' + nginxConfigText + '\'' });
         });
+        await log_1.default.run(username, '启动 wetty', async () => {
+            docker.execContainerCommand({ container, cmd: 'wetty' });
+        });
         await log_1.default.run(username, '启动 code-server ', async () => {
             docker.execContainerCommand({ container, cmd: 'code-server --bind-addr 127.0.0.1:8000 --auth none' });
         });
@@ -169,6 +188,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
         res.sendStatus(200);
     }
     catch (err) {
+        console.log(err);
         let socket = (0, log_1.getWebsocketIo)();
         socket.emit('Log', '[Error]' + JSON.stringify(err));
         res.sendStatus(500);

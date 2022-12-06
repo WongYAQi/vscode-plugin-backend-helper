@@ -70,11 +70,13 @@ class Docker {
       WorkingDir: dir
     })
     let result = await exec?.start({})
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       let logs = ''
+      let data = ''
       result?.on('data', chunk => {
         !quiet && console.log('[info] ' + chunk.toString())
         logs += chunk.toString()
+        data += chunk.toString()
         logs = logs.substring(logs.length - 1200)
       })
       result?.on('error', error => {
@@ -83,10 +85,11 @@ class Docker {
       })
       result?.on('end', async () => {
         let info = await exec.inspect()
+        console.log(info)
         if (info?.ExitCode) {
           reject({ command: cmd, message: 'ExitCode: ' + info.ExitCode, exitcode: info.ExitCode, logs })
         } else {
-          resolve()
+          resolve(data)
         }
       })
     })
