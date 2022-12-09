@@ -9,8 +9,6 @@
 import Dockerode from 'dockerode'
 import { chmod, createReadStream, createWriteStream, mkdirSync, readFileSync, rmdirSync, rmSync } from 'fs'
 const tar = require('tar-fs')
-import { resolve } from 'path'
-const os = require('os')
 class Docker {
   docker: Dockerode
   constructor (host = 'host.docker.internal') {
@@ -137,7 +135,7 @@ class ProductionDocker extends Docker {
 }
 
 export function createDockerFactory () {
-  if (process.env['DOCKER_ENV'] === 'production') {
+  if (process.env['DOCKER_ENV'] === 'prod') {
     return new ProductionDocker()
   } else {
     return new DevDocker()

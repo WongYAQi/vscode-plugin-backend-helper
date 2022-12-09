@@ -4,11 +4,13 @@
       <div class='logo' />
       <div class='item' @click='tab = "home"'>Home</div>
       <div class='item' @click='tab = "git"'>Git</div>
+      <div class='item' @click='tab = "v2"'>V2</div>
     </div>
     <div class='maintab'>
       <logwire-development-login v-if='!username' @login='handleLogin' />
       <logwire-development-home v-else-if='tab === "home"' :username='username' />
       <logwire-development-git v-else-if='tab === "git"' />
+      <logwire-development-v2 v-else-if='tab === "v2"' />
     </div>
   </div>
 </template>
@@ -17,12 +19,14 @@
 import Home from './components/Home.vue'
 import Login from './components/Login.vue'
 import Git from './components/Git.vue'
+import V2Vue from './components/V2.vue'
 export default {
   name: 'App',
   components: {
     'logwire-development-home': Home,
     'logwire-development-login': Login,
-    'logwire-development-git': Git
+    'logwire-development-git': Git,
+    'logwire-development-v2': V2Vue
   },
   data () {
     return {

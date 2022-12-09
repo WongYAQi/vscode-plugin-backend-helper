@@ -8,7 +8,7 @@ import { Server } from "socket.io";
 import { createDockerFactory } from "./docker";
 import LogUtil, { getWebsocketIo, setWebsocketIo } from "./log";
 import { createPgClient, executePgQuery } from "./postgres";
-import { getUserAllConfigs, getUserConfig, setUserConfig, sleep } from "./utils";
+import { copyAndCreateGatewayPropertiesV2InDocker, copyAndCreateServerPropertiesV2InDocker, getAvailableNodePort, getUserAllConfigs, getUserConfig, setUserConfig, sleep } from "./utils";
 var app = express();
 const httpServer = createServer(app);
 
@@ -38,15 +38,26 @@ app.use(express.json())
 app.post('/api/login', function (req, res) {
   req.session.regenerate(function (err) {
     if (err) {
-      res.send(500)
+      res.status(500).send(err)
       return
     }
     req.session.user = req.body.username
     req.session.save(function (err) {
       if (err) {
-        res.sendStatus(500)
+        res.status(500).send(err)
       } else {
-        res.sendStatus(200)
+        // 当用户数据文件没有 node-port 时，认为该用户还没有注册过
+        if (getUserConfig(req.body.username, 'node-port') === undefined) {
+          getAvailableNodePort().then(port => {
+            writeFileSync(path.resolve(__dirname, './database/' + req.body.username + '.json'), JSON.stringify({ "node-port": port }))
+          }).then(() => {
+            res.sendStatus(200)
+          }).catch(err => {
+            res.status(500).send(err)
+          })
+        } else {
+          res.sendStatus(200)
+        }
       }
     })
   })
@@ -63,54 +74,59 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
   try {
     let docker = createDockerFactory()
     let username = req.session.user as string || '1234'
-    let host = '192.168.0.190'
+    let host = process.env['DOCKER_ENV'] === 'dev' ? 'localhost' : '192.168.0.4'
+    let port = getUserConfig(username, 'node-port')
     let container: Dockerode.Container = {} as Dockerode.Container
 
     await LogUtil.run(username, '创建 node 容器', async () => {
-      container = await docker.checkAndCreateContainer({name: username + '.node', img: 'node:16', expose: { '8080/tcp': {} } , port: { '8080/tcp': [{ HostPort: '30000' }]  } })
+      container = await docker.checkAndCreateContainer({name: username + '.node', img: 'node:16', expose: { '8080/tcp': {} } , port: { '8080/tcp': [{ HostPort: port }]  } })
       await docker.startContainer({ container })
     })
-    writeFileSync(path.resolve(__dirname, './database/' + username + '.json'), '{}')
-    await LogUtil.run(username, '创建 postgres 容器', async () => {
-      let postgres = await docker.checkAndCreateContainer({ name: 'postgres', img: 'postgres:12', env: ["POSTGRES_PASSWORD=postgres"], port: { '5432/tcp': [{ HostPort: '30001' }] } })
-      let info = await postgres.inspect()
-      await docker.startContainer({ container: postgres })
-      if (info?.State.Status === 'created') {
-        info = await postgres.inspect()
-        await sleep(3000)
-        let client = await createPgClient({ host: host, port: 30001 })
-        await executePgQuery({ client, query: 'CREATE DATABASE logwirev2'})
-        await executePgQuery({ client, query: 'CREATE SCHEMA library' })
-        await client.end()
-      }
-    })
-    await LogUtil.run(username, '创建 redis 容器', async () => {
-      let redis = await docker.checkAndCreateContainer({ name: 'redis', img: 'redis', port: { '6379/tcp': [{ HostPort: '30002' }] } })
-      await docker.startContainer({ container: redis })
-    })
-    await LogUtil.run(username, '创建 zookeeper 容器', async () => {
-      let zookeeper = await docker.checkAndCreateContainer({ name: 'zookeeper', img: 'zookeeper', port: { '2181/tcp': [{ HostPort:  '30003' }] } })
-      await docker.startContainer({ container: zookeeper })
-    })
 
-    await LogUtil.run(username, '创建 rocketmq serv 容器', async () => {
-      let rockermqsrv = await docker.checkAndCreateContainer({ name: 'rocketmq.srv', img: 'foxiswho/rocketmq:4.8.0', port: { '9876/tcp': [{ 'HostPort': '9876' }] /** , '10909/tcp': [], '10911/tcp': [], '10912/tcp': []*/ }, env: ['JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m'] , cmd: ['bash', '-c', 'mqnamesrv'] })
-      await docker.startContainer({ container: rockermqsrv })
-    })
+    // 开发环境（也就是本机环境）下，拉取相关的镜像
+    if (process.env['DOCKER_ENV'] === 'dev') {
+      await LogUtil.run(username, '创建 postgres 容器', async () => {
+        let postgres = await docker.checkAndCreateContainer({ name: 'postgres', img: 'postgres:12', env: ["POSTGRES_PASSWORD=postgres"], port: { '5432/tcp': [{ HostPort: '30001' }] } })
+        let info = await postgres.inspect()
+        await docker.startContainer({ container: postgres })
+        if (info?.State.Status === 'created') {
+          info = await postgres.inspect()
+          await sleep(3000)
+          let client = await createPgClient({ host: host, port: 30001 })
+          await executePgQuery({ client, query: 'CREATE DATABASE logwirev2'})
+          await executePgQuery({ client, query: 'CREATE SCHEMA library' })
+          await client.end()
+        }
+      })
+      await LogUtil.run(username, '创建 redis 容器', async () => {
+        let redis = await docker.checkAndCreateContainer({ name: 'redis', img: 'redis', port: { '6379/tcp': [{ HostPort: '30002' }] } })
+        await docker.startContainer({ container: redis })
+      })
+      await LogUtil.run(username, '创建 zookeeper 容器', async () => {
+        let zookeeper = await docker.checkAndCreateContainer({ name: 'zookeeper', img: 'zookeeper', port: { '2181/tcp': [{ HostPort:  '30003' }] } })
+        await docker.startContainer({ container: zookeeper })
+      })
 
-    await LogUtil.run(username, '创建 rocketmq broker 容器', async () => {
-      let rocketmqbroker = await docker.checkAndCreateContainer({ name: 'rocketmq.broker', img: 'foxiswho/rocketmq:4.8.0', port: { '10909/tcp': [{ 'HostPort': '10909' }], '10911/tcp': [{ 'HostPort': '10911' }] /** , '9876/tcp': [],'10912/tcp': [] */ }, env: ['JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m'] })
-      await docker.startContainer({ container: rocketmqbroker })
+      // 检查本机 rocketmq 端口是否被占用，被占用说明已经有 rockqtmq 服务启动，这时候就不安装容器了
+      await LogUtil.run(username, '创建 rocketmq serv 容器', async () => {
+        let rockermqsrv = await docker.checkAndCreateContainer({ name: 'rocketmq.srv', img: 'foxiswho/rocketmq:4.8.0', port: { '9876/tcp': [{ 'HostPort': '9876' }] /** , '10909/tcp': [], '10911/tcp': [], '10912/tcp': []*/ }, env: ['JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m'] , cmd: ['bash', '-c', 'mqnamesrv'] })
+        await docker.startContainer({ container: rockermqsrv })
+      })
 
-      let info = await rocketmqbroker.inspect()
-      if (info?.State.Status === 'created') {
-        let brokerText = readFileSync(path.resolve(__dirname, './files/broker.conf'), { encoding: 'utf-8' })
-        await docker.execContainerCommand({ container: rocketmqbroker, cmd: 'mkdir /home/rocketmq/conf -p' })
-        await docker.execContainerCommand({ container: rocketmqbroker, cmd: 'touch /home/rocketmq/conf/broker.conf' })
-        await docker.writeFile({ container: rocketmqbroker, path: '/home/rocketmq/conf/broker.conf', text: "'" +brokerText + "'" })
-        await docker.execContainerCommand({ container: rocketmqbroker, cmd: 'mqbroker -c /home/rocketmq/conf/broker.conf' })
-      }
-    })
+      await LogUtil.run(username, '创建 rocketmq broker 容器', async () => {
+        let rocketmqbroker = await docker.checkAndCreateContainer({ name: 'rocketmq.broker', img: 'foxiswho/rocketmq:4.8.0', port: { '10909/tcp': [{ 'HostPort': '10909' }], '10911/tcp': [{ 'HostPort': '10911' }] /** , '9876/tcp': [],'10912/tcp': [] */ }, env: ['JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m'] })
+        await docker.startContainer({ container: rocketmqbroker })
+
+        let info = await rocketmqbroker.inspect()
+        if (info?.State.Status === 'created') {
+          let brokerText = readFileSync(path.resolve(__dirname, './files/broker.conf'), { encoding: 'utf-8' })
+          await docker.execContainerCommand({ container: rocketmqbroker, cmd: 'mkdir /home/rocketmq/conf -p' })
+          await docker.execContainerCommand({ container: rocketmqbroker, cmd: 'touch /home/rocketmq/conf/broker.conf' })
+          await docker.writeFile({ container: rocketmqbroker, path: '/home/rocketmq/conf/broker.conf', text: "'" +brokerText + "'" })
+          await docker.execContainerCommand({ container: rocketmqbroker, cmd: 'mqbroker -c /home/rocketmq/conf/broker.conf' })
+        }
+      })
+    }
 
     await LogUtil.run(username, '克隆仓库', async () => {
       await docker.execContainerCommand({ container, cmd: ['git', 'config' ,'--global', 'core.sshCommand', 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'] })
@@ -199,12 +215,9 @@ app.post('/api/backend/compile', isAuthenticated, async function (req, res) {
     // 打包完成后，移动默认配置文件, 修改配置文件信息
     await docker.execContainerCommand({ container, cmd: 'mv -f ../tenants_config build-output/backend/', dir: '/var/logwire-backend' })
 
-    let gatewayText = readFileSync(path.resolve(__dirname, './files/application-gateway.properties'), { encoding: 'utf-8' })
-    await docker.writeFile({ container, path: '/var/logwire-backend/build-output/gateway/config/application-gateway.properties', text: '\'' + gatewayText + '\'' })
-   
-    let backendText = readFileSync(path.resolve(__dirname, './files/application-server.properties'), { encoding: 'utf-8' })
-    await docker.writeFile({ container, path: '/var/logwire-backend/build-output/backend/config/application-server.properties', text: '\'' + backendText.replace(/'/g, '"') + '\'' })
-    
+    copyAndCreateServerPropertiesV2InDocker(username)
+    copyAndCreateGatewayPropertiesV2InDocker(username)
+
     res.sendStatus(200)
   } catch (err) {
     res.status(500).send(err)
@@ -276,6 +289,20 @@ app.post('/api/git/setUserInfo', isAuthenticated, async function (req, res) {
     setUserConfig(username, 'gitUserEmail', gitUserEmail)
     res.send(200)
   } catch (err) {
+    res.status(500).send(err)
+  }
+})
+
+app.post('/api/config/setUserSetting', isAuthenticated, async function (req, res) {
+  try {
+    let data: Record<string, string> = req.body
+    let docker = createDockerFactory()
+    let username = req.session.user as string || '1234'
+    for (let key in data) {
+      setUserConfig(username, key, data[key])
+    }
+    res.sendStatus(200)
+  } catch(err) {
     res.status(500).send(err)
   }
 })

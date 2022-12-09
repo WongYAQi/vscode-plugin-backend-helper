@@ -1,0 +1,33 @@
+{
+  "postgres": {
+    "visible": false,
+    "username": "postgres",
+    "password": "postgres",
+    "ip": "192.168.0.4",
+    "port": "25556",
+    "database": "logwirev2",
+    "schema": "library"
+  },
+  "redis": {
+    "visible": false,
+    "ip": "192.168.0.4",
+    "port": "25557"
+  },
+  "zookeeper": {
+    "visible": false,
+    "ip": "192.168.0.4",
+    "port": "2182"
+  },
+  "rocketmq": {
+    "visible": false,
+    "ip": "192.168.0.4",
+    "port": "9876"
+  },
+  "tenants": {
+    "visible": false,
+    "id": "wongyaqi",
+    "host": "a.test.com:23333,a.test.com:23334",
+    "database-schema": "library",
+    "primary-namespace": "library"
+  }
+}
