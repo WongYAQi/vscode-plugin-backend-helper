@@ -13,8 +13,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createDockerFactory = void 0;
 const dockerode_1 = __importDefault(require("dockerode"));
 const fs_1 = require("fs");
+const log_1 = __importDefault(require("./log"));
 const tar = require('tar-fs');
-const os = require('os');
 class Docker {
     constructor(host = 'host.docker.internal') {
         this.docker = new dockerode_1.default({ host: host, port: 2375 });
@@ -80,7 +80,7 @@ class Docker {
             let logs = '';
             let data = '';
             result?.on('data', chunk => {
-                !quiet && console.log('[info] ' + chunk.toString());
+                !quiet && log_1.default.print('[info] ' + chunk.toString());
                 logs += chunk.toString();
                 data += chunk.toString();
                 logs = logs.substring(logs.length - 1200);
@@ -141,7 +141,7 @@ class ProductionDocker extends Docker {
     }
 }
 function createDockerFactory() {
-    if (process.env['DOCKER_ENV'] === 'production') {
+    if (process.env['DOCKER_ENV'] === 'prod') {
         return new ProductionDocker();
     }
     else {

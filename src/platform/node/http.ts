@@ -1,14 +1,16 @@
-import Dockerode = require("dockerode");
-import express = require("express");
-import session = require('express-session')
+import Dockerode from "dockerode";
+import express from "express"
+import session from 'express-session'
 import { readFile, readFileSync, writeFileSync } from "fs";
 import { createServer } from "http";
 import path = require("path");
-import { Server } from "socket.io";
+import { Server } from "socket.io"
 import { createDockerFactory } from "./docker";
 import LogUtil, { getWebsocketIo, setWebsocketIo } from "./log";
 import { createPgClient, executePgQuery } from "./postgres";
 import { copyAndCreateGatewayPropertiesV2InDocker, copyAndCreateServerPropertiesV2InDocker, getAvailableNodePort, getUserAllConfigs, getUserConfig, setUserConfig, sleep } from "./utils";
+import lodash from 'lodash'
+
 var app = express();
 const httpServer = createServer(app);
 
@@ -49,8 +51,9 @@ app.post('/api/login', function (req, res) {
         // 当用户数据文件没有 node-port 时，认为该用户还没有注册过
         if (getUserConfig(req.body.username, 'node-port') === undefined) {
           getAvailableNodePort().then(port => {
-            writeFileSync(path.resolve(__dirname, './database/' + req.body.username + '.json'), JSON.stringify({ "node-port": port }))
-          }).then(() => {
+            writeFileSync(path.resolve(__dirname, './database/' + req.body.username + '.json'), JSON.stringify({ "node-port": port }, null, 2))
+            return port
+          }).then((port) => {
             res.sendStatus(200)
           }).catch(err => {
             res.status(500).send(err)
@@ -83,9 +86,8 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
       await docker.startContainer({ container })
     })
 
-    // 开发环境（也就是本机环境）下，拉取相关的镜像
-    if (process.env['DOCKER_ENV'] === 'dev') {
-      await LogUtil.run(username, '创建 postgres 容器', async () => {
+    await LogUtil.run(username, '创建 postgres 容器', async () => {
+      if (getUserConfig(username, 'postgres.ip') !== '192.168.0.4') {
         let postgres = await docker.checkAndCreateContainer({ name: 'postgres', img: 'postgres:12', env: ["POSTGRES_PASSWORD=postgres"], port: { '5432/tcp': [{ HostPort: '30001' }] } })
         let info = await postgres.inspect()
         await docker.startContainer({ container: postgres })
@@ -97,23 +99,31 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
           await executePgQuery({ client, query: 'CREATE SCHEMA library' })
           await client.end()
         }
-      })
-      await LogUtil.run(username, '创建 redis 容器', async () => {
+      }
+    })
+    await LogUtil.run(username, '创建 redis 容器', async () => {
+      if (getUserConfig(username, 'redis.ip') !== '192.168.0.4') {
         let redis = await docker.checkAndCreateContainer({ name: 'redis', img: 'redis', port: { '6379/tcp': [{ HostPort: '30002' }] } })
         await docker.startContainer({ container: redis })
-      })
-      await LogUtil.run(username, '创建 zookeeper 容器', async () => {
+      }
+    })
+    await LogUtil.run(username, '创建 zookeeper 容器', async () => {
+      if (getUserConfig(username, 'zookeeper.ip') !== '192.168.0.4') {
         let zookeeper = await docker.checkAndCreateContainer({ name: 'zookeeper', img: 'zookeeper', port: { '2181/tcp': [{ HostPort:  '30003' }] } })
         await docker.startContainer({ container: zookeeper })
-      })
+      }
+    })
 
-      // 检查本机 rocketmq 端口是否被占用，被占用说明已经有 rockqtmq 服务启动，这时候就不安装容器了
-      await LogUtil.run(username, '创建 rocketmq serv 容器', async () => {
+    // 检查本机 rocketmq 端口是否被占用，被占用说明已经有 rockqtmq 服务启动，这时候就不安装容器了
+    await LogUtil.run(username, '创建 rocketmq serv 容器', async () => {
+      if (getUserConfig(username, 'rocketmq.ip') !== '192.168.0.4') {
         let rockermqsrv = await docker.checkAndCreateContainer({ name: 'rocketmq.srv', img: 'foxiswho/rocketmq:4.8.0', port: { '9876/tcp': [{ 'HostPort': '9876' }] /** , '10909/tcp': [], '10911/tcp': [], '10912/tcp': []*/ }, env: ['JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m'] , cmd: ['bash', '-c', 'mqnamesrv'] })
         await docker.startContainer({ container: rockermqsrv })
-      })
+      }
+    })
 
-      await LogUtil.run(username, '创建 rocketmq broker 容器', async () => {
+    await LogUtil.run(username, '创建 rocketmq broker 容器', async () => {
+      if (getUserConfig(username, 'rocketmq.ip') !== '192.168.0.4') {
         let rocketmqbroker = await docker.checkAndCreateContainer({ name: 'rocketmq.broker', img: 'foxiswho/rocketmq:4.8.0', port: { '10909/tcp': [{ 'HostPort': '10909' }], '10911/tcp': [{ 'HostPort': '10911' }] /** , '9876/tcp': [],'10912/tcp': [] */ }, env: ['JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m'] })
         await docker.startContainer({ container: rocketmqbroker })
 
@@ -125,8 +135,8 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
           await docker.writeFile({ container: rocketmqbroker, path: '/home/rocketmq/conf/broker.conf', text: "'" +brokerText + "'" })
           await docker.execContainerCommand({ container: rocketmqbroker, cmd: 'mqbroker -c /home/rocketmq/conf/broker.conf' })
         }
-      })
-    }
+      }
+    })
 
     await LogUtil.run(username, '克隆仓库', async () => {
       await docker.execContainerCommand({ container, cmd: ['git', 'config' ,'--global', 'core.sshCommand', 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'] })
@@ -156,7 +166,6 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
       try {
         await docker.execContainerCommand({ container, cmd: 'which wetty'})
       } catch (err) {
-        console.log(err)
         await docker.execContainerCommand({ container, cmd: 'yarn global add wetty' })
         await docker.execContainerCommand({ container, cmd: 'useradd console' })
         await docker.execContainerCommand({ container, cmd: 'echo -e "console\nconsole" | passwd console' })
@@ -165,9 +174,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
     await LogUtil.run(username, '安装 code-server ', async () => {
       try {
         let result = await docker.execContainerCommand({ container, cmd: 'which code-server' })
-        console.log(result)
       } catch (err) {
-        console.log(err)
         await docker.execContainerCommand({ container, cmd: 'apt-get install -y build-essential pkg-config python3' })
         await docker.execContainerCommand({ container, cmd: 'npm config set python python3' })
         await docker.execContainerCommand({ container, cmd: 'yarn global add code-server@4.6.0' })
@@ -184,9 +191,19 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
       await docker.writeFile({ container, path: '/etc/nginx/nginx.conf', text: '\'' + nginxConfigText + '\'' })
     })
     await LogUtil.run(username, '启动 wetty', async () => {
+      try {
+        let result = await docker.execContainerCommand({ container, cmd: 'lsof -i:3001' })
+      } catch (err) {
+        console.log(err)
+      }
       docker.execContainerCommand({ container, cmd: 'wetty --port 3001' })
     })
     await LogUtil.run(username, '启动 code-server ', async () => {
+      try {
+        let result = await docker.execContainerCommand({ container, cmd: 'lsof -i:8000' })
+      } catch (err) {
+        console.log(err)
+      }
       docker.execContainerCommand({ container, cmd: 'code-server --bind-addr 127.0.0.1:8000 --auth none' })
     })
     await LogUtil.run(username, '启动 nginx ', async () => {
@@ -197,7 +214,7 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
   } catch (err: any) {
     console.log(err)
     let socket = getWebsocketIo()
-    socket.emit('Log', '[Error]' + JSON.stringify(err))
+    socket.emit('Log', '[error]' + JSON.stringify(err))
     res.sendStatus(500)
   }
 })
@@ -206,14 +223,24 @@ app.post('/api/backend/compile', isAuthenticated, async function (req, res) {
   try {
     let docker = createDockerFactory()
     let username = req.session.user as string || '1234'
-    // 每次编译前把已有的 tenants_config 文件夹拷贝到一个地方，编译完成后，再拷贝回来
-    let container = await docker.checkAndCreateContainer({name: username + '.node', img: 'node:16', port: { '8080/tcp': [{ HostPost: '30000' }]} })
+    let port = getUserConfig(username, 'node-port')
 
-    await docker.execContainerCommand({ container, cmd: 'mv -f build-output/backend/tenants_config/ ../tenants_config', dir: '/var/logwire-backend' })
+    // 每次编译前把已有的 tenants_config 文件夹拷贝到一个地方，编译完成后，再拷贝回来
+
+    let container = await docker.checkAndCreateContainer({name: username + '.node', img: 'node:16', port: { '8080/tcp': [{ HostPost: port }]} })
+    await docker.startContainer({ container })
+
+    try {
+      await docker.execContainerCommand({ container, cmd: 'mv -f build-output/backend/tenants_config/ ../tenants_config', dir: '/var/logwire-backend' })
+    } catch (err) {
+    }
     await docker.execContainerCommand({ container, cmd: 'bash build-release.sh --module=logwire', dir: '/var/logwire-backend' })
     await docker.execContainerCommand({ container, cmd: 'bash build-release.sh --module=assemble', dir: '/var/logwire-backend' })
-    // 打包完成后，移动默认配置文件, 修改配置文件信息
-    await docker.execContainerCommand({ container, cmd: 'mv -f ../tenants_config build-output/backend/', dir: '/var/logwire-backend' })
+    try {
+      // 打包完成后，移动默认配置文件, 修改配置文件信息
+      await docker.execContainerCommand({ container, cmd: 'mv -f ../tenants_config build-output/backend/', dir: '/var/logwire-backend' })
+    } catch (err) {
+    }
 
     copyAndCreateServerPropertiesV2InDocker(username)
     copyAndCreateGatewayPropertiesV2InDocker(username)
@@ -293,16 +320,23 @@ app.post('/api/git/setUserInfo', isAuthenticated, async function (req, res) {
   }
 })
 
+/**
+ * query: 'postgres.xxx.yyy' 表示对象的字符串
+ * body: JSON对象
+ */
 app.post('/api/config/setUserSetting', isAuthenticated, async function (req, res) {
   try {
     let data: Record<string, string> = req.body
-    let docker = createDockerFactory()
+    let query = req.query
+    let path = query.path
     let username = req.session.user as string || '1234'
-    for (let key in data) {
-      setUserConfig(username, key, data[key])
+
+    if (typeof path === 'string') {
+      setUserConfig(username, path, data)
     }
     res.sendStatus(200)
   } catch(err) {
+    console.log(err)
     res.status(500).send(err)
   }
 })

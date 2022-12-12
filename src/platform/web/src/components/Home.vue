@@ -53,6 +53,7 @@ export default {
     return {
       status: 'null', // null | created | stoped | running | 
       loading: false,
+      logLevel: '', // info | progress
       logs: []
     }
   },
@@ -71,18 +72,12 @@ export default {
     });
     const removeLogPrefix = (log) => log.replace(/^\[.*?\]/, '')
     this.socket.on('Log', (log) => {
-      if (log.startsWith('[Progress]')) {
+      if (this.logLevel === 'info') {
         this.logs.unshift(removeLogPrefix(log))
       } else {
-        this.logs.shift()
-      }
-      if (log.startsWith('[Log]')) {
-        this.logs.unshift(removeLogPrefix(log))
-      } else if (log.startsWith('[Error]')) {
-        let err = removeLogPrefix(log)
-        let errObj = JSON.parse(err)
-        console.log(err)
-        this.logs.unshift(errObj.logs)
+        if (!log.startsWith('[info]')) {
+          this.logs.unshift(removeLogPrefix(log))
+        }
       }
     })
 
@@ -97,6 +92,7 @@ export default {
     handleInstall () {
       this.logs = []
       this.loading = true
+      this.logLevel = 'progress'
       axios.post('/api/installProject').then(() => {
         this.handleGetStatus()
       }).then(() => {
@@ -105,12 +101,16 @@ export default {
     },
     handleCompile () {
       this.loading = true
+      this.logLevel = 'info'
+      this.logs = []
       axios.post('/api/backend/compile').then(() => {
         this.loading = false
       })
     },
     handleExecute () {
       this.loading = true
+      this.logLevel = 'info'
+      this.logs = []
       axios.post('/api/backend/execute').then(() => {
         this.loading = false
       })

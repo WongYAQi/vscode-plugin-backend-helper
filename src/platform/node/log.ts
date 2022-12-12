@@ -23,11 +23,15 @@ export default class LogUtil {
       socket.emit('Log', log)
       return
     } else {
-      socket.emit('Log', '[Progress]' + log + '中...')
+      socket.emit('Log', '[progress]' + log + '中...')
       await cb()
       steps.push(log)
       setUserConfig(username, key, steps)
-      socket.emit('Log', '[Log]' + log + '完成')
+      socket.emit('Log', '[progress]' + log + '完成')
     }
+  }
+  static async print(log: string) {
+    let socket = getWebsocketIo()
+    socket.emit('Log', log)
   }
 }

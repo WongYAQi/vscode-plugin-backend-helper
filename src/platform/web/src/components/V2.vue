@@ -1,7 +1,7 @@
 <template>
   <div class='content'>
     <div class='container'>
-      <form class='form'>
+      <form class='form' ref='form'>
         <div class='form-item'>
           <div class='form-item__label'>
             <label>Postgres</label>
@@ -64,6 +64,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 /**
  * v2 的部分配置信息，
  * 1. 初始化之前完成配置，保存后会将配置信息写入到该用户的数据文件内，初始化时检查则不再安装容器
@@ -109,10 +110,24 @@ export default {
       }
     }
   },
+  created () {
+    axios.get('/api/getProjectInfo').then(res => {
+      Object.keys(this.form).forEach(key => {
+        if (res.data[key]) {
+          this.form[key] = res.data[key]
+        }
+      })
+    })
+  },
+  mounted () {
+    this.$refs.form.addEventListener('submit', evt => {
+      evt.preventDefault();
+    })
+  },
   methods: {
     handleSaveConfig (key) {
       let data = this.form[key]
-      axios.post('/api/config/setUserSetting', data)
+      axios.post('/api/config/setUserSetting', data, { params: { path: key } })
     }
   }
 }
@@ -121,8 +136,9 @@ export default {
 <style scoped>
 .content{
   background-color: #EFEFEF;
-  overflow: hidden;
+  overflow: auto;
   height: 100%;
   padding: 24px;
+  box-sizing: border-box;
 }
 </style>

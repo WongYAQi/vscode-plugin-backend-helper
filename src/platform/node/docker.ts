@@ -8,6 +8,7 @@
 
 import Dockerode from 'dockerode'
 import { chmod, createReadStream, createWriteStream, mkdirSync, readFileSync, rmdirSync, rmSync } from 'fs'
+import LogUtil from './log'
 const tar = require('tar-fs')
 class Docker {
   docker: Dockerode
@@ -72,7 +73,7 @@ class Docker {
       let logs = ''
       let data = ''
       result?.on('data', chunk => {
-        !quiet && console.log('[info] ' + chunk.toString())
+        !quiet && LogUtil.print('[info] ' + chunk.toString())
         logs += chunk.toString()
         data += chunk.toString()
         logs = logs.substring(logs.length - 1200)
