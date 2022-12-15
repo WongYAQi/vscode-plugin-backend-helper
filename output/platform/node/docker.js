@@ -17,7 +17,8 @@ const log_1 = __importDefault(require("./log"));
 const tar = require('tar-fs');
 class Docker {
     constructor(host = 'host.docker.internal') {
-        this.docker = new dockerode_1.default({ host: host, port: 2375 });
+        console.log(host);
+        this.docker = new dockerode_1.default({ host, port: 2375 });
     }
     async checkAndCreateContainer({ name, img, env, port, cmd, expose }) {
         let targetContainerName = 'logwire_backend_helper.' + name;
@@ -141,7 +142,7 @@ class ProductionDocker extends Docker {
     }
 }
 function createDockerFactory() {
-    if (process.env['DOCKER_ENV'] === 'prod') {
+    if (process.env['DOCKER_ENV']?.trim() === 'prod') {
         return new ProductionDocker();
     }
     else {

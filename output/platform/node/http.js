@@ -73,8 +73,10 @@ app.post('/api/login', function (req, res) {
             else {
                 // 当用户数据文件没有 node-port 时，认为该用户还没有注册过
                 if ((0, utils_1.getUserConfig)(req.body.username, 'node-port') === undefined) {
-                    (0, utils_1.getAvailableNodePort)().then(port => {
-                        (0, fs_1.writeFileSync)(path.resolve(__dirname, './database/' + req.body.username + '.json'), JSON.stringify({ "node-port": port }, null, 2));
+                    let host = process.env['DOCKER_ENV']?.trim() === 'prod' ? '192.168.0.4' : 'localhost';
+                    (0, utils_1.getAvailableNodePort)(host).then(port => {
+                        const userDefaultSetting = require(path.resolve(__dirname, './files/default-user-setting.json'));
+                        (0, fs_1.writeFileSync)(path.resolve(__dirname, './database/' + req.body.username + '.json'), JSON.stringify(Object.assign({}, userDefaultSetting, { "node-port": port }), null, 2));
                         return port;
                     }).then((port) => {
                         res.sendStatus(200);
@@ -100,11 +102,12 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
     try {
         let docker = (0, docker_1.createDockerFactory)();
         let username = req.session.user || '1234';
-        let host = process.env['DOCKER_ENV'] === 'dev' ? 'localhost' : '192.168.0.4';
-        let port = (0, utils_1.getUserConfig)(username, 'node-port');
+        let host = process.env['DOCKER_ENV']?.trim() === 'prod' ? '192.168.0.4' : 'localhost';
+        let port = (0, utils_1.getUserConfig)(username, 'node-port').toString();
         let container = {};
         await log_1.default.run(username, '创建 node 容器', async () => {
             container = await docker.checkAndCreateContainer({ name: username + '.node', img: 'node:16', expose: { '8080/tcp': {} }, port: { '8080/tcp': [{ HostPort: port }] } });
+            console.log(container);
             await docker.startContainer({ container });
         });
         await log_1.default.run(username, '创建 postgres 容器', async () => {

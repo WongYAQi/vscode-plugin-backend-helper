@@ -4,6 +4,8 @@ import http = require('http')
 import path = require('path')
 import { createDockerFactory } from './docker'
 import lodash from 'lodash'
+import { exec, spawn } from 'child_process'
+import { Telnet } from 'telnet-client'
 /**
  * 读取当前机器上的文件文本信息
  * @param path 
@@ -28,9 +30,13 @@ export function getUserAllConfigs (username: string): Record<string, string> {
 }
 export function getUserConfig (username: string, config: string) {
   let jsonPath = path.resolve(__dirname, './database/' + username + '.json')
-  let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' })
-  let json = JSON.parse(jsonStr) || {}
-  return lodash.get(json, config)
+  try {
+    let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' })
+    let json = JSON.parse(jsonStr) || {}
+    return lodash.get(json, config)
+  } catch (err: any) {
+    console.log(err)
+  }
 }
 
 export function setUserConfig (username: string, config: string, value: any) {
@@ -95,22 +101,23 @@ export async function copyAndCreateGatewayPropertiesV2InDocker (username: string
 }
 
 // 在目标服务器上，获取 node 可用的端口
-export async function getAvailableNodePort (startPort = 30000) {
-  const tryPortAvailable = function (port: number) {
-    return new Promise((resolve, reject) => {
-      let server = http.createServer().listen(port)
-      server.on('listening', function () {
-        server.close()
-        resolve(port)
-      })
-      server.on('error', function (err: any) {
-        if (err.code === 'EADDRINUSE') {
-          resolve(tryPortAvailable(++port))
-        } else {
-          reject(err)
-        }
-      })
-    })
+export async function getAvailableNodePort (ip: string, startPort = 30000) {
+  const tryPortAvailable = async function (port: number): Promise<number> {
+    let telnet = new Telnet()
+    const params = {
+      host: ip,
+      port: port,
+      negotiationMandatory: false,
+      timeout: 1500
+    }
+    try {
+      await telnet.connect(params)
+      telnet.end()
+      return tryPortAvailable(port + 1)
+    } catch (err) {
+      console.log(err)
+      return port
+    }
   }
   return tryPortAvailable(startPort)
 }

@@ -1,7 +1,7 @@
 <template>
   <div class='content'>
     <div class='container'>
-      <form class='form'>
+      <form ref='form' class='form'>
         <div class='form-item'>
           <div class='form-item__label'>
             <label>Email</label>
@@ -35,6 +35,11 @@ export default {
         email: 'wongyaqi@greaconsulting.com'
       }
     }
+  },
+  mounted () {
+    this.$refs.form.addEventListener('submit', evt => {
+      evt.preventDefault();
+    })
   },
   methods: {
     handleGenerate () {

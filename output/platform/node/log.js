@@ -21,17 +21,11 @@ class LogUtil {
         let key = 'InstallSteps';
         let steps = (0, utils_1.getUserConfig)(username, key) || [];
         let socket = getWebsocketIo();
-        if (steps.includes(log)) {
-            socket.emit('Log', log);
-            return;
-        }
-        else {
-            socket.emit('Log', '[progress]' + log + '中...');
-            await cb();
-            steps.push(log);
-            (0, utils_1.setUserConfig)(username, key, steps);
-            socket.emit('Log', '[progress]' + log + '完成');
-        }
+        socket.emit('Log', '[progress]' + log + '中...');
+        await cb();
+        steps.push(log);
+        (0, utils_1.setUserConfig)(username, key, steps);
+        socket.emit('Log', '[progress]' + log + '完成');
     }
     static async print(log) {
         let socket = getWebsocketIo();

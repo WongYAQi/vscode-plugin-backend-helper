@@ -5,10 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAvailableNodePort = exports.copyAndCreateGatewayPropertiesV2InDocker = exports.copyAndCreateServerPropertiesV2InDocker = exports.setUserConfig = exports.getUserConfig = exports.getUserAllConfigs = exports.sleep = exports.readFile = void 0;
 const fs = require("fs");
-const http = require("http");
 const path = require("path");
 const docker_1 = require("./docker");
 const lodash_1 = __importDefault(require("lodash"));
+const telnet_client_1 = require("telnet-client");
 /**
  * 读取当前机器上的文件文本信息
  * @param path
@@ -34,9 +34,14 @@ function getUserAllConfigs(username) {
 exports.getUserAllConfigs = getUserAllConfigs;
 function getUserConfig(username, config) {
     let jsonPath = path.resolve(__dirname, './database/' + username + '.json');
-    let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' });
-    let json = JSON.parse(jsonStr) || {};
-    return lodash_1.default.get(json, config);
+    try {
+        let jsonStr = fs.readFileSync(jsonPath, { encoding: 'utf-8' });
+        let json = JSON.parse(jsonStr) || {};
+        return lodash_1.default.get(json, config);
+    }
+    catch (err) {
+        console.log(err);
+    }
 }
 exports.getUserConfig = getUserConfig;
 function setUserConfig(username, config, value) {
@@ -89,23 +94,24 @@ async function copyAndCreateGatewayPropertiesV2InDocker(username) {
 }
 exports.copyAndCreateGatewayPropertiesV2InDocker = copyAndCreateGatewayPropertiesV2InDocker;
 // 在目标服务器上，获取 node 可用的端口
-async function getAvailableNodePort(startPort = 30000) {
-    const tryPortAvailable = function (port) {
-        return new Promise((resolve, reject) => {
-            let server = http.createServer().listen(port);
-            server.on('listening', function () {
-                server.close();
-                resolve(port);
-            });
-            server.on('error', function (err) {
-                if (err.code === 'EADDRINUSE') {
-                    resolve(tryPortAvailable(++port));
-                }
-                else {
-                    reject(err);
-                }
-            });
-        });
+async function getAvailableNodePort(ip, startPort = 30000) {
+    const tryPortAvailable = async function (port) {
+        let telnet = new telnet_client_1.Telnet();
+        const params = {
+            host: ip,
+            port: port,
+            negotiationMandatory: false,
+            timeout: 1500
+        };
+        try {
+            await telnet.connect(params);
+            telnet.end();
+            return tryPortAvailable(port + 1);
+        }
+        catch (err) {
+            console.log(err);
+            return port;
+        }
     };
     return tryPortAvailable(startPort);
 }

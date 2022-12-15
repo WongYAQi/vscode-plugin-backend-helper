@@ -13,7 +13,8 @@ const tar = require('tar-fs')
 class Docker {
   docker: Dockerode
   constructor (host = 'host.docker.internal') {
-    this.docker = new Dockerode({ host: host, port: 2375 })
+    console.log(host)
+    this.docker = new Dockerode({ host, port: 2375 })
   }
   async checkAndCreateContainer ({ name, img, env, port, cmd, expose }: { name: string, img: string, env?: string[], port?: Record<string, any>, cmd?: string[], expose?: Record<string, any> }) {
     let targetContainerName = 'logwire_backend_helper.' + name
@@ -136,7 +137,7 @@ class ProductionDocker extends Docker {
 }
 
 export function createDockerFactory () {
-  if (process.env['DOCKER_ENV'] === 'prod') {
+  if (process.env['DOCKER_ENV']?.trim() === 'prod') {
     return new ProductionDocker()
   } else {
     return new DevDocker()

@@ -50,8 +50,13 @@ app.post('/api/login', function (req, res) {
       } else {
         // 当用户数据文件没有 node-port 时，认为该用户还没有注册过
         if (getUserConfig(req.body.username, 'node-port') === undefined) {
-          getAvailableNodePort().then(port => {
-            writeFileSync(path.resolve(__dirname, './database/' + req.body.username + '.json'), JSON.stringify({ "node-port": port }, null, 2))
+          let host = process.env['DOCKER_ENV']?.trim() === 'prod' ? '192.168.0.4' : 'localhost'
+          getAvailableNodePort(host).then(port => {
+            const userDefaultSetting = require(path.resolve(__dirname, './files/default-user-setting.json'))
+            writeFileSync(
+              path.resolve(__dirname, './database/' + req.body.username + '.json'),
+              JSON.stringify(Object.assign({}, userDefaultSetting, { "node-port": port }), null, 2)
+            )
             return port
           }).then((port) => {
             res.sendStatus(200)
@@ -77,12 +82,13 @@ app.post('/api/installProject', isAuthenticated, async function (req, res) {
   try {
     let docker = createDockerFactory()
     let username = req.session.user as string || '1234'
-    let host = process.env['DOCKER_ENV'] === 'dev' ? 'localhost' : '192.168.0.4'
-    let port = getUserConfig(username, 'node-port')
+    let host = process.env['DOCKER_ENV']?.trim() === 'prod' ? '192.168.0.4' : 'localhost'
+    let port = getUserConfig(username, 'node-port').toString()
     let container: Dockerode.Container = {} as Dockerode.Container
 
     await LogUtil.run(username, '创建 node 容器', async () => {
       container = await docker.checkAndCreateContainer({name: username + '.node', img: 'node:16', expose: { '8080/tcp': {} } , port: { '8080/tcp': [{ HostPort: port }]  } })
+      console.log(container)
       await docker.startContainer({ container })
     })
 

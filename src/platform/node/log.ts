@@ -19,16 +19,11 @@ export default class LogUtil {
     let key = 'InstallSteps'
     let steps: string[] = getUserConfig(username, key) || []
     let socket = getWebsocketIo()
-    if (steps.includes(log)) {
-      socket.emit('Log', log)
-      return
-    } else {
-      socket.emit('Log', '[progress]' + log + '中...')
-      await cb()
-      steps.push(log)
-      setUserConfig(username, key, steps)
-      socket.emit('Log', '[progress]' + log + '完成')
-    }
+    socket.emit('Log', '[progress]' + log + '中...')
+    await cb()
+    steps.push(log)
+    setUserConfig(username, key, steps)
+    socket.emit('Log', '[progress]' + log + '完成')
   }
   static async print(log: string) {
     let socket = getWebsocketIo()

@@ -1,0 +1,55 @@
+{
+  "postgres": {
+    "visible": false,
+    "username": "postgres",
+    "password": "postgres",
+    "ip": "192.168.0.4",
+    "port": "25556",
+    "database": "logwirev2",
+    "schema": "library"
+  },
+  "redis": {
+    "visible": false,
+    "ip": "192.168.0.4",
+    "port": "25557"
+  },
+  "zookeeper": {
+    "visible": false,
+    "ip": "192.168.0.4",
+    "port": "2182"
+  },
+  "rocketmq": {
+    "visible": false,
+    "ip": "192.168.0.4",
+    "port": "9876"
+  },
+  "tenants": {
+    "visible": false,
+    "id": "wongyaqi",
+    "host": "a.test.com:23333,a.test.com:23334",
+    "database-schema": "library",
+    "primary-namespace": "library"
+  },
+  "node-port": 30000,
+  "InstallSteps": [
+    "创建 node 容器",
+    "创建 postgres 容器",
+    "创建 redis 容器",
+    "创建 zookeeper 容器",
+    "创建 rocketmq serv 容器",
+    "创建 rocketmq broker 容器",
+    "创建 node 容器",
+    "创建 postgres 容器",
+    "创建 redis 容器",
+    "创建 zookeeper 容器",
+    "创建 rocketmq serv 容器",
+    "创建 rocketmq broker 容器",
+    "克隆仓库",
+    "添加源",
+    "更新源",
+    "安装 openjdk ",
+    "安装 maven ",
+    "修改 maven 源",
+    "安装 Wetty"
+  ]
+}
